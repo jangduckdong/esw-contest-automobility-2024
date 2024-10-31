@@ -29,4 +29,5 @@ target_sources(${PARA_APP_NAME}
                navigate/aa/port/inferencedata.cpp
                navigate/aa/navigate.cpp
                main.cpp
+               navigate/aa/constants.hpp
 )

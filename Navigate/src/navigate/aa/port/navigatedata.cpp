@@ -140,6 +140,12 @@ void NavigateData::SendEventNEventTriggered(const deepracer::service::navigateda
         m_logger.LogError() << "NavigateData::SendEventNEventTriggered::Send::" << send.Error().Message();
     }
 }
+
+void NavigateData::SetReceiveEventIEventHandler(
+    std::function<void(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType&)> handler)
+{
+    m_receiveEventIEventHandler = handler;
+}
  
 } /// namespace port
 } /// namespace aa

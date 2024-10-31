@@ -10,11 +10,13 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : navigate.cpp
 /// SOFTWARE COMPONENT NAME           : Navigate
-/// GENERATED DATE                    : 2024-10-25 13:47:26
+/// GENERATED DATE                    : 2024-10-25 14:06:18
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUSION HEADER FILES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "navigate/aa/navigate.h"
+#include "deepracer/type/impl_type_navigateData.h"
+#include "constants.hpp"
  
 namespace navigate
 {
@@ -22,22 +24,35 @@ namespace aa
 {
  
 Navigate::Navigate()
-    : m_logger(ara::log::CreateLogger("NAV", "SWC", ara::log::LogLevel::kVerbose))
-    , m_workers(2)
+    // 로그 출력
+    : m_logger(ara::log::CreateLogger("NAV", "SWC", ara::log::LogLevel::kVerbose)) // Logger 객체 초기화
+    , m_workers(2) //m_worker.Async에 등록가능한 함수 갯수
+    , m_throttleScale(0.0f) // 기본 스로틀 스케일 값
+    , m_actionSpaceType(ActionSpaceTypes::CONTINUOUS) // 기본 액션 스페이스 타입
+    , m_maxActionSpaceValues({{ModelMetadataKeys::STEERING, 0.0}, {ModelMetadataKeys::SPEED, 0.0}}) // 최대 액션 스페이스 값 초기화
+    , m_speedMappingCoeficients({{'a', 0.0}, {'b', 0.0}}) // 속도 매핑 계수 초기화
+    , m_actionSpace({
+        {0, {{ModelMetadataKeys::STEERING, {CONTINUOUS_LOW, CONTINUOUS_HIGH}},
+              {ModelMetadataKeys::SPEED, {CONTINUOUS_LOW, CONTINUOUS_HIGH}}}}})
 {
+    SetActionSpaceScales();
 }
  
 Navigate::~Navigate()
 {
 }
- 
+
+// Sensor Software Component의 초기화 함수
+// 설계하엿던 Port 객체들을 생성한다 
 bool Navigate::Initialize()
 {
     m_logger.LogVerbose() << "Navigate::Initialize";
     
     bool init{true};
     
+    //PPort 객체 생성
     m_NavigateData = std::make_shared<navigate::aa::port::NavigateData>();
+    //RPort 객체 생성
     m_InferenceData = std::make_shared<navigate::aa::port::InferenceData>();
     
     return init;
@@ -47,6 +62,7 @@ void Navigate::Start()
 {
     m_logger.LogVerbose() << "Navigate::Start";
     
+    //Port의 Start() 함수를 호출한다
     m_NavigateData->Start();
     m_InferenceData->Start();
     
@@ -54,10 +70,12 @@ void Navigate::Start()
     Run();
 }
  
+// Navigate가 종료되어야 할때 호출되는 함수
 void Navigate::Terminate()
 {
     m_logger.LogVerbose() << "Navigate::Terminate";
     
+    //Port의 Terminate() 함수를 호출한다
     m_NavigateData->Terminate();
     m_InferenceData->Terminate();
 }
@@ -66,11 +84,192 @@ void Navigate::Run()
 {
     m_logger.LogVerbose() << "Navigate::Run";
     
+    // 데이터를 전송
     m_workers.Async([this] { m_NavigateData->SendEventNEventCyclic(); });
-    m_workers.Async([this] { m_InferenceData->ReceiveEventIEventCyclic(); });
+    // 데이터를 수신
+    m_workers.Async([this] { TaskReceiveIEventCyclic(); });
+    //m_workers.Async([this] { m_InferenceData->ReceiveEventIEventCyclic(); });
     
     m_workers.Wait();
 }
+
+void Navigate::TaskReceiveIEventCyclic()
+{
+    m_InferenceData->SetReceiveEventIEventHandler([this](const auto& inferenceMsg)
+    {
+        InferenceCb(inferenceMsg);
+    });
+    m_InferenceData->ReceiveEventIEventCyclic();
+}
  
+void Navigate::InferenceCb(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg)
+{
+    // navigateData 객체 생성
+    deepracer::service::navigatedata::proxy::events::NEvent::SampleType navigateData;
+
+    // sample 데이터를 사용하여 필요한 값을 설정
+    ProcessInferenceData(inferenceMsg, navigateData);
+
+    // navigateData 전송
+    m_NavigateData->WriteDataNEvent(navigateData);
+    m_logger.LogInfo() << "Navigate Data Published: Angle=" << navigateData.angle 
+                       << " Throttle=" << navigateData.throttle 
+                       << " Timestamp=" << navigateData.timestamp;
+}
+
+void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::proxy::events::NEvent::SampleType& navigateData)
+{
+    // 기본 스로틀 값 설정
+    navigateData.throttle = m_throttleScale;  // m_throttleScale 변수는 클래스의 멤버 변수여야 함
+
+    try
+    {
+        if (m_actionSpaceType == ActionSpaceTypes::DISCRETE)
+        {
+            // 가장 높은 확률을 가진 결과 찾기
+            auto maxProb = std::max_element(inferenceMsg.inference_data.begin(), inferenceMsg.inference_data.end(),
+                [](const auto& a, const auto& b) {
+                    return a.class_prob < b.class_prob;
+                });
+            
+            // 선택된 행동의 class_label을 가져온다
+            int actionId = maxProb->class_label;
+
+            // 각도와 스로틀 설정
+            navigateData.angle = GetMaxScaledValue(m_actionSpace[actionId][ModelMetadataKeys::STEERING], ModelMetadataKeys::STEERING);
+            navigateData.throttle *= GetNonLinearlyMappedSpeed(m_actionSpace[actionId][ModelMetadataKeys::SPEED]);
+        }
+        else if (m_actionSpaceType == ActionSpaceTypes::CONTINUOUS)
+        {
+            std::map<int, float> actionValues;
+
+            // 결과를 반복하며 액션 값을 저장
+            for (const auto& result : inferenceMsg.inference_data)
+            {
+                actionValues[int(result.class_label)] = std::max(std::min(result.class_prob, 1.0f), -1.0f);
+            }
+
+            // 각 값을 스케일링
+            float scaledAngle = ScaleContinuousValue(actionValues[0], -1.0f, 1.0f,
+                m_actionSpace[ModelMetadataKeys::STEERING][ModelMetadataKeys::CONTINUOUS_LOW],
+                m_actionSpace[ModelMetadataKeys::STEERING][ModelMetadataKeys::CONTINUOUS_HIGH]);
+
+            navigateData.angle = GetMaxScaledValue(scaledAngle, ModelMetadataKeys::STEERING);
+
+            float scaledThrottle = ScaleContinuousValue(actionValues[1], -1.0f, 1.0f,
+                m_actionSpace[ModelMetadataKeys::SPEED][ModelMetadataKeys::CONTINUOUS_LOW],
+                m_actionSpace[ModelMetadataKeys::SPEED][ModelMetadataKeys::CONTINUOUS_HIGH]);
+
+            navigateData.throttle *= GetNonLinearlyMappedSpeed(scaledThrottle);
+        }
+        else
+        {
+            throw std::runtime_error("Action space type not supported");
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        m_logger.LogError() << "Error while processing data in navigation node: " << ex.what();
+        navigateData.throttle = 0.0;
+        navigateData.angle = 0.0;
+    }
+}
+
+
+float Navigate::GetMaxScaledValue(float actionValue, const std::string& actionKey)
+{
+    // 주어진 actionValue를 최대값인 maxValue로 나누어 0.0에서 1.0 사이의 비율로 변환
+    try
+    {
+        float maxValue = m_maxActionSpaceValues[actionKey]; // actionKey에 해당하는 최대값을 가져옴
+        if (maxValue <= 0.0f) // maxValue가 0 이하인 경우 에러 처리
+        {
+            m_logger.LogError() << "Invalid " << actionKey << " value " << maxValue; // 로그에 오류 기록
+            return 0.0f; // 비율을 0으로 반환
+        }
+        return actionValue / maxValue; // 비율을 계산하여 반환
+    }
+    catch (const std::exception& ex) // 예외 처리
+    {
+        m_logger.LogError() << "Unable to scale the action value " << actionKey << ": " << ex.what(); // 로그에 오류 기록
+        return 0.0f; // 비율을 0으로 반환
+    }
+}
+
+float Navigate::GetNonLinearlyMappedSpeed(float scaledActionSpaceSpeed)
+{
+    // 속도값 계산하는 부분
+    float mappedSpeed = m_speedMappingCoeficients['a'] * scaledActionSpaceSpeed * scaledActionSpaceSpeed +
+                         m_speedMappingCoeficients['b'] * scaledActionSpaceSpeed; // 비선형 변환 계산
+
+    return std::max(0.0f, std::min(mappedSpeed, 1.0f)); // 0.0과 1.0 사이의 값으로 반환
+}
+
+float Navigate::ScaleContinuousValue(float action, float minOld, float maxOld, float minNew, float maxNew)
+{
+    // 스케일링이 불가능한 경우를 체크
+    if (maxOld == minOld)
+    {
+        m_logger.LogError() << "Unsupported minimum and maximum action space bounds for scaling values. "
+                            << "minOld: " << minOld << "; maxOld: " << maxOld;
+        return 0.0f; // 기본적으로 0.0을 반환
+    }
+
+    // 스케일링 공식 적용
+    return ((maxNew - minNew) / (maxOld - minOld)) * (action - minOld) + minNew;
+}
+
+void Navigate::SetActionSpaceScales()
+{
+    try
+    {
+        if (m_actionSpaceType == ActionSpaceTypes::DISCRETE)
+        {
+            // 최대 스티어링 값 계산
+            m_maxActionSpaceValues[ModelMetadataKeys::STEERING] = 
+                std::abs(*std::max_element(m_actionSpace.begin(), m_actionSpace.end(),
+                [](const auto& a, const auto& b) {
+                    return std::abs(a[ModelMetadataKeys::STEERING]) < std::abs(b[ModelMetadataKeys::STEERING]);
+                })[ModelMetadataKeys::STEERING]);
+            
+            // 최대 속도 값 계산
+            m_maxActionSpaceValues[ModelMetadataKeys::SPEED] = 
+                std::abs(*std::max_element(m_actionSpace.begin(), m_actionSpace.end(),
+                [](const auto& a, const auto& b) {
+                    return std::abs(a[ModelMetadataKeys::SPEED]) < std::abs(b[ModelMetadataKeys::SPEED]);
+                })[ModelMetadataKeys::SPEED]);
+        }
+        else if (m_actionSpaceType == ActionSpaceTypes::CONTINUOUS)
+        {
+            m_maxActionSpaceValues[ModelMetadataKeys::STEERING] =
+                m_actionSpace[ModelMetadataKeys::STEERING][ModelMetadataKeys::CONTINUOUS_HIGH];
+            m_maxActionSpaceValues[ModelMetadataKeys::SPEED] =
+                m_actionSpace[ModelMetadataKeys::SPEED][ModelMetadataKeys::CONTINUOUS_HIGH];
+        }
+        else
+        {
+            throw std::runtime_error("Incorrect action space type: " + std::to_string(m_actionSpaceType));
+        }
+
+        // 속도 매핑 계수 계산
+        m_speedMappingCoeficients['a'] =
+            (1.0f / std::pow(m_maxActionSpaceValues[ModelMetadataKeys::SPEED], 2)) *
+            (2.0f * DEFAULT_SPEED_SCALES[0] - 4.0f * DEFAULT_SPEED_SCALES[1]);
+        
+        m_speedMappingCoeficients['b'] =
+            (1.0f / m_maxActionSpaceValues[ModelMetadataKeys::SPEED]) *
+            (4.0f * DEFAULT_SPEED_SCALES[1] - DEFAULT_SPEED_SCALES[0]);
+
+        m_logger.LogInfo() << "Action space scale set: " << m_maxActionSpaceValues 
+                           << " Mapping equation params a: " << m_speedMappingCoeficients['a']
+                           << " b: " << m_speedMappingCoeficients['b'];
+    }
+    catch (const std::exception& ex)
+    {
+        m_logger.LogError() << "Unable to detect action space scale: " << ex.what();
+    }
+}
+
+
 } /// namespace aa
 } /// namespace navigate
