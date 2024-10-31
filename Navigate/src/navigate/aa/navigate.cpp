@@ -15,7 +15,8 @@
 /// INCLUSION HEADER FILES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "navigate/aa/navigate.h"
-#include "deepracer/type/impl_type_navigateData.h"
+#include "deepracer/type/impl_type_navigatedatanode.h"
+#include "deepracer/type/impl_type_inferencedatanode.h"
 #include "constants.hpp"
  
 namespace navigate
