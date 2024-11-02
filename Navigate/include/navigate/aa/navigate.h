@@ -54,9 +54,10 @@ public:
 private:
     /// @brief Run software component
     void Run();
+    void SetActionSpace()
     void TaskReceiveIEventCyclic();
     void InferenceCb(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg);
-    void ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::proxy::events::NEvent::SampleType& navigateData);
+    void ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::proxy::events::NEvent::SampleType& navigateMsg)
     float GetMaxScaledValue(float actionValue, const std::string& actionKey);
     float GetNonLinearlyMappedSpeed(float scaledActionSpaceSpeed);
     float ScaleContinuousValue(float action, float minOld, float maxOld, float minNew, float maxNew);
@@ -79,7 +80,7 @@ private:
     // 새로운 멤버 변수 정의
     float m_throttleScale; // 스로틀 스케일 변수
     ActionSpaceTypes m_actionSpaceType; // 액션 스페이스 타입
-    std::map<int, std::vector<float>> m_actionSpace; // 액션 스페이스 데이터 구조
+    std::vector<std::map<std::string, double>> m_actionSpace; // 액션 스페이스 데이터 구조
     std::map<std::string, float> m_maxActionSpaceValues; // 최대 액션 스페이스 값들
     std::map<char, float> m_speedMappingCoeficients; // 속도 매핑 계수
 };

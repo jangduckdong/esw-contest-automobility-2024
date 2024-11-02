@@ -18,6 +18,13 @@
 #include "deepracer/type/impl_type_navigatedatanode.h"
 #include "deepracer/type/impl_type_inferencedatanode.h"
 #include "constants.hpp"
+
+//json 사용
+#include <fstream>
+#include "json/json.h"
+
+//현재 시간
+#include <chrono>
  
 namespace navigate
 {
@@ -32,11 +39,9 @@ Navigate::Navigate()
     , m_actionSpaceType(ActionSpaceTypes::CONTINUOUS) // 기본 액션 스페이스 타입
     , m_maxActionSpaceValues({{ModelMetadataKeys::STEERING, 0.0}, {ModelMetadataKeys::SPEED, 0.0}}) // 최대 액션 스페이스 값 초기화
     , m_speedMappingCoeficients({{'a', 0.0}, {'b', 0.0}}) // 속도 매핑 계수 초기화
-    , m_actionSpace({
-        {0, {{ModelMetadataKeys::STEERING, {CONTINUOUS_LOW, CONTINUOUS_HIGH}},
-              {ModelMetadataKeys::SPEED, {CONTINUOUS_LOW, CONTINUOUS_HIGH}}}}})
+    , m_actionSpace(DEFAULT_ACTION_SPACE)
 {
-    SetActionSpaceScales();
+    SetActionSpace();
 }
  
 Navigate::~Navigate()
@@ -94,6 +99,49 @@ void Navigate::Run()
     m_workers.Wait();
 }
 
+void Navigate::SetActionSpace()
+{
+    try
+    {
+        //json 데이터 읽기
+        Json::Value metadata;
+        std::ifstream file("model_metadata.json", std::ifstream::binary);
+
+        if (!file.is_open()) {
+            m_logger.LogError() << "Failed to open model_metadata.json";
+            m_actionSpace = DEFAULT_ACTION_SPACE;
+            m_actionSpaceType = ActionSpaceTypes::DISCRETE;
+            return;
+        }
+
+        file >> metadata;
+
+        m_actionSpace = metadata["action_space"];
+        m_logger.LogInfo() << "Action space loaded: " << m_actionSpace;
+        m_actionSpaceType = metadata["action_space_type"];
+        if (metadata["action_space_type"] == "continuous")
+        {
+            m_actionSpaceType = ActionSpaceTypes::CONTINUOUS;
+        }
+        else
+        {
+            m_actionSpaceType = ActionSpaceTypes::DISCRETE;
+        }
+        //validateActionSpace(); // action space 유효성 검사 (필요하면 할거)
+    }
+    catch (const std::exception& ex)
+    {   
+        m_actionSpace = DEFAULT_ACTION_SPACE; // 기본 action space 설정
+        m_actionSpaceType = ActionSpaceTypes::DISCRETE; // 기본 action space 타입 설정
+        m_logger.LogError() << "Failed to load action space and action space type due to: " << ex.what();
+        return;
+    }
+
+    m_logger.LogInfo() << "Setting the action space: " << m_actionSpace << " and action space type: " << m_actionSpaceType;
+    SetActionSpaceScales();
+    return;
+}
+
 void Navigate::TaskReceiveIEventCyclic()
 {
     m_InferenceData->SetReceiveEventIEventHandler([this](const auto& inferenceMsg)
@@ -105,23 +153,28 @@ void Navigate::TaskReceiveIEventCyclic()
  
 void Navigate::InferenceCb(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg)
 {
-    // navigateData 객체 생성
-    deepracer::service::navigatedata::proxy::events::NEvent::SampleType navigateData;
+    // navigateMsg 객체 생성
+    deepracer::service::navigatedata::proxy::events::NEvent::SampleType navigateMsg;
 
-    // sample 데이터를 사용하여 필요한 값을 설정
-    ProcessInferenceData(inferenceMsg, navigateData);
+    // inferenceMsg 데이터를 사용하여 필요한 값을 설정
+    ProcessInferenceData(inferenceMsg, navigateMsg);
 
-    // navigateData 전송
-    m_NavigateData->WriteDataNEvent(navigateData);
-    m_logger.LogInfo() << "Navigate Data Published: Angle=" << navigateData.angle 
-                       << " Throttle=" << navigateData.throttle 
-                       << " Timestamp=" << navigateData.timestamp;
+    // 현재 시간을 타임스탬프로 가져와 navigateMsg.timestamp에 설정
+    navigateMsg.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::system_clock::now().time_since_epoch()
+                            ).count();
+
+    // navigateMsg 전송
+    m_NavigateData->WriteDataNEvent(navigateMsg);
+    m_logger.LogInfo() << "Navigate Data Published: Angle=" << navigateMsg.angle 
+                       << " Throttle=" << navigateMsg.throttle 
+                       << " Timestamp=" << navigateMsg.timestamp;
 }
 
-void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::proxy::events::NEvent::SampleType& navigateData)
+void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::proxy::events::NEvent::SampleType& navigateMsg)
 {
     // 기본 스로틀 값 설정
-    navigateData.throttle = m_throttleScale;  // m_throttleScale 변수는 클래스의 멤버 변수여야 함
+    navigateMsg.throttle = m_throttleScale;  // m_throttleScale 변수는 클래스의 멤버 변수여야 함
 
     try
     {
@@ -137,8 +190,8 @@ void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::pro
             int actionId = maxProb->class_label;
 
             // 각도와 스로틀 설정
-            navigateData.angle = GetMaxScaledValue(m_actionSpace[actionId][ModelMetadataKeys::STEERING], ModelMetadataKeys::STEERING);
-            navigateData.throttle *= GetNonLinearlyMappedSpeed(m_actionSpace[actionId][ModelMetadataKeys::SPEED]);
+            navigateMsg.angle = GetMaxScaledValue(m_actionSpace[actionId][ModelMetadataKeys::STEERING], ModelMetadataKeys::STEERING);
+            navigateMsg.throttle *= GetNonLinearlyMappedSpeed(m_actionSpace[actionId][ModelMetadataKeys::SPEED]);
         }
         else if (m_actionSpaceType == ActionSpaceTypes::CONTINUOUS)
         {
@@ -155,13 +208,13 @@ void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::pro
                 m_actionSpace[ModelMetadataKeys::STEERING][ModelMetadataKeys::CONTINUOUS_LOW],
                 m_actionSpace[ModelMetadataKeys::STEERING][ModelMetadataKeys::CONTINUOUS_HIGH]);
 
-            navigateData.angle = GetMaxScaledValue(scaledAngle, ModelMetadataKeys::STEERING);
+            navigateMsg.angle = GetMaxScaledValue(scaledAngle, ModelMetadataKeys::STEERING);
 
             float scaledThrottle = ScaleContinuousValue(actionValues[1], -1.0f, 1.0f,
                 m_actionSpace[ModelMetadataKeys::SPEED][ModelMetadataKeys::CONTINUOUS_LOW],
                 m_actionSpace[ModelMetadataKeys::SPEED][ModelMetadataKeys::CONTINUOUS_HIGH]);
 
-            navigateData.throttle *= GetNonLinearlyMappedSpeed(scaledThrottle);
+            navigateMsg.throttle *= GetNonLinearlyMappedSpeed(scaledThrottle);
         }
         else
         {
@@ -171,8 +224,8 @@ void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::pro
     catch (const std::exception& ex)
     {
         m_logger.LogError() << "Error while processing data in navigation node: " << ex.what();
-        navigateData.throttle = 0.0;
-        navigateData.angle = 0.0;
+        navigateMsg.throttle = 0.0;
+        navigateMsg.angle = 0.0;
     }
 }
 

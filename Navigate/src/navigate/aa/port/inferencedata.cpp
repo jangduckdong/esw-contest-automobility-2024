@@ -225,6 +225,12 @@ void InferenceData::ReadDataIEvent(ara::com::SamplePtr<deepracer::service::infer
     auto data = *samplePtr.Get();
     // put your logic
 }
+
+void NavigateData::SetReceiveEventIEventHandler(
+    std::function<void(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType&)> handler)
+{
+    m_receiveEventIEventHandler = handler;
+}
  
 } /// namespace port
 } /// namespace aa
