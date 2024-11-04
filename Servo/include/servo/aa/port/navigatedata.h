@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : navigatedata.h
 /// SOFTWARE COMPONENT NAME           : NavigateData
-/// GENERATED DATE                    : 2024-10-25 13:47:26
+/// GENERATED DATE                    : 2024-10-25 14:06:18
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifndef PARA_AA_GEN_SOFTWARE_COMPONENT_RPORT_SERVO_AA_NAVIGATEDATA_H
 #define PARA_AA_GEN_SOFTWARE_COMPONENT_RPORT_SERVO_AA_NAVIGATEDATA_H

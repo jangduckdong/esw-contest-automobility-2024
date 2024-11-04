@@ -61,7 +61,9 @@ public:
     /// @brief Read event data, IEvent
     void ReadDataIEvent(ara::com::SamplePtr<deepracer::service::inferencedata::proxy::events::IEvent::SampleType const> samplePtr);
     
-    
+    void SetReceiveEventIEventHandler(
+        std::function<void(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType&)> handler);
+
     
 private:
     /// @brief Callback for find service
@@ -90,6 +92,8 @@ private:
     
     /// @brief Find service handle
     std::shared_ptr<ara::com::FindServiceHandle> m_findHandle;
+
+    std::function<void(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType&)> m_receiveEventIEventHandler;
 };
  
 } /// namespace port

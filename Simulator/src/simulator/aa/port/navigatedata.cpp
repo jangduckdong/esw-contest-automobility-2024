@@ -225,6 +225,12 @@ void NavigateData::ReadDataNEvent(ara::com::SamplePtr<deepracer::service::naviga
     auto data = *samplePtr.Get();
     // put your logic
 }
+
+void NavigateData::SetReceiveEventNEventHandler(
+    std::function<void(const deepracer::service::navigatedata::proxy::events::NEvent::SampleType&)> handler)
+{
+    m_receiveEventNEventHandler = handler;
+}
  
 } /// namespace port
 } /// namespace aa
