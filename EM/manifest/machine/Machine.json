@@ -10,12 +10,12 @@
     "endpoints" : [
         {
             "connector" : "mlan0",
-            "ip-address" : "192.168.1.10"
+            "ip-address" : "127.0.0.1"
         }
     ],
     "sd-endpoints" : [
         {
-            "ip-address" : "192.168.1.10",
+            "ip-address" : "224.0.0.1",
             "port" : 30490
         }
     ]
