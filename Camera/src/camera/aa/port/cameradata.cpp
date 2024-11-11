@@ -117,7 +117,7 @@ bool CameraData::scanCameraIndex(const std::vector<int32_t>& cameraIdxList) {
 // 프레임 저장하기
 void CameraData::produceFrames() {
     // 임시 데이터 구조체 생성
-    deepracer::service::cameradata::skeleton::events::CEvent::SampleType& frame_data;  // 임시 데이터 구조체 생성
+    deepracer::service::cameradata::skeleton::events::CEvent::SampleType frame_data;  // 임시 데이터 구조체 생성
 
     // 각 카메라에서 프레임 캡처 및 JPEG 인코딩
     for (auto i = 0; i < videoCaptureList_.size() && i < 2; ++i) {  // 최대 두 카메라 사용

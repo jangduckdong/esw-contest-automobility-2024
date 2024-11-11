@@ -18,6 +18,7 @@
 /// INCLUSION HEADER FILES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "lidar/aa/port/lidardata.h"
+#include "sl_lidar.h"
  
 #include "para/swc/port_pool.h"
  
@@ -43,6 +44,8 @@ public:
     
     /// @brief Terminate software component
     void Terminate();
+
+    void TaskGenerateLEventValue();
  
 private:
     /// @brief Run software component
@@ -57,6 +60,10 @@ private:
     
     /// @brief Instance of Port {Lidar.LidarData}
     std::shared_ptr<lidar::aa::port::LidarData> m_LidarData;
+
+    std::shared_ptr<sl_lidar::ILidarDriver> drv;
+
+    bool m_running;
 };
  
 } /// namespace aa

@@ -39,7 +39,7 @@ namespace aa
 Lidar::Lidar()
     : m_logger(ara::log::CreateLogger("LID", "SWC", ara::log::LogLevel::kVerbose))
     , m_workers(2)
-    , drv(nullptr)
+    , drv(nullptr) {}
 {
 }
  
@@ -100,7 +100,7 @@ void Lidar::Terminate()
     if (drv) {
         drv->stop();
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        m_drv->setMotorSpeed(0);
+        drv->setMotorSpeed(0);
         delete drv;
         drv = NULL;
     }
@@ -111,7 +111,7 @@ void Lidar::Run()
     m_logger.LogVerbose() << "Lidar::Run";
     
     // LidarData에서 데이터 캡처 및 전송을 비동기로 호출
-    m_workers.Async([this] { m_LidarData->TaskGenerateLEventValue(); });
+    m_workers.Async([this] { TaskGenerateLEventValue(); });
     m_workers.Async([this] { m_LidarData->SendEventLEventCyclic(); });
     
     m_workers.Wait();
@@ -121,7 +121,7 @@ void Lidar::TaskGenerateLEventValue()
 {
     while (m_running) 
     {
-        m_LidarData->produceScannig();
+        m_LidarData->produceScanning();
         std::this_thread::sleep_for(std::chrono::seconds(1));  // 1초 대기 후 다음 프레임 캡처
     }
 }

@@ -59,6 +59,8 @@ private:
     
     /// @brief Instance of Port {Camera.CameraData}
     std::shared_ptr<camera::aa::port::CameraData> m_CameraData;
+
+    bool m_running;
 };
  
 } /// namespace aa

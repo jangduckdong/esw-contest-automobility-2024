@@ -21,6 +21,7 @@
  
 #include "ara/log/logger.h"
  
+#include <opencv2/opencv.hpp>
 #include <mutex>
 #include <thread>
  
@@ -86,6 +87,12 @@ public:
      
     /// @brief Send event directly with argument, CEvent
     void SendEventCEventTriggered(const deepracer::service::cameradata::skeleton::events::CEvent::SampleType& data);
+
+    bool scanCameraIndex(const std::vector<int32_t>& cameraIdxList);
+
+    void produceFrames();
+
+    int64_t getCurrentTimestamp() const;
      
 private:
     /// @brief Logger for this port
@@ -102,6 +109,8 @@ private:
     
     /// @brief Data for event, CEvent
     deepracer::service::cameradata::skeleton::events::CEvent::SampleType m_CEventData;
+
+    std::vector<cv::VideoCapture> videoCaptureList_;
 };
  
 } /// namespace port

@@ -39,8 +39,6 @@ public:
     /// @brief Constructor
     SvLidarDataSkeletonImpl(ara::core::InstanceSpecifier instanceSpec, ara::com::MethodCallProcessingMode mode = ara::com::MethodCallProcessingMode::kEvent);
     
-    
-    
 private:
     /// @brief Logger for this port
     ara::log::Logger& m_logger;
@@ -86,6 +84,10 @@ public:
      
     /// @brief Send event directly with argument, LEvent
     void SendEventLEventTriggered(const deepracer::service::lidardata::skeleton::events::LEvent::SampleType& data);
+
+    void produceScanning();
+
+    int64_t getCurrentTimestamp() const;
      
 private:
     /// @brief Logger for this port
