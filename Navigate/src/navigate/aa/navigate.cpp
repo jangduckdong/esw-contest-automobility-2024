@@ -25,6 +25,10 @@
 
 //현재 시간
 #include <chrono>
+
+//SampleType
+#include "deepracer/service/inferencedata/svinferencedata_proxy.h"
+#include "deepracer/service/navigatedata/svnavigatedata_proxy.h"
  
 namespace navigate
 {
