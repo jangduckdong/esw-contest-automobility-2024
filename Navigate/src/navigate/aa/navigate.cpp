@@ -116,16 +116,18 @@ void Navigate::SetActionSpace()
 
         file >> metadata;
 
-        m_actionSpace = metadata["action_space"];
+        //m_actionSpace = metadata["action_space"];
         m_logger.LogInfo() << "Action space loaded: " << m_actionSpace;
         m_actionSpaceType = metadata["action_space_type"];
         if (metadata["action_space_type"] == "continuous")
         {
             m_actionSpaceType = ActionSpaceTypes::CONTINUOUS;
+            m_actionSpace = metadata["action_space"];
         }
         else
         {
             m_actionSpaceType = ActionSpaceTypes::DISCRETE;
+            m_actionSpace = DEFAULT_ACTION_SPACE;
         }
         //validateActionSpace(); // action space 유효성 검사 (필요하면 할거)
     }

@@ -32,6 +32,9 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
+// 추가한 코드 (1줄)
+#include "deepracer/type/impl_type_inferencedatanode.h"
+
 
 const std::string LIDAR = "LIDAR";
 const std::string STEREO = "STEREO_CAMERAS";
@@ -292,14 +295,24 @@ namespace IntelInferenceEngine {
             auto outputDims = output->getTensorDesc().getDims();
             auto outputData = output->buffer().as<InferenceEngine::PrecisionTrait<InferenceEngine::Precision::FP32>::value_type*>();
 
-            auto inferMsg = deepracer_interfaces_pkg::msg::InferResultsArray();
-            for (size_t i = 0; i < msg->images.size(); ++i) {
-                // Send the image data over with the results
-                inferMsg.images.push_back(msg->images[i]) ;
-            }
+            // 삭제한 코드: 이미지 없어도 될듯..? (5줄)
+            // auto inferMsg = deepracer_interfaces_pkg::msg::InferResultsArray();
+            // for (size_t i = 0; i < msg->images.size(); ++i) {
+            //     // Send the image data over with the results
+            //     inferMsg.images.push_back(msg->images[i]) ;
+            // }
+
+            // 추가한 코드: 우리 데이터타입으로 (1줄)
+            deepracer::type::InferenceDataNode inferMsg;
+
+            // 추가한 코드: 타임스탬프 값
+            inferMsg.timestamp = output.timestamp;
 
             for (size_t label = 0; label < outputDims[1]; ++label) {
-                auto inferData = deepracer_interfaces_pkg::msg::InferResults();
+                //삭제한 코드: 딥레이서 데이터 타입말고 (1줄)
+                //auto inferData = deepracer_interfaces_pkg::msg::InferResults();
+                //추가한 코드: 우리꺼 쓰자 (1줄)
+                deepracer::type::InferenceData inferData;
                 inferData.class_label = label;
                 inferData.class_prob = outputData[label];
                 // Set bounding box data to -1 to indicate to subscribers that this model offers no
@@ -314,6 +327,8 @@ namespace IntelInferenceEngine {
             // resultPub_->publish(inferMsg);
             // 이 아래에 navigate로 Event를 보내는 코드 작성 ( 수정 필요 )
             
+            //추가한 코드: 데이터 전송 (1줄)
+            m_InferenceData->WriteDataNEvent(inferMsg);
             /*
             
             */
@@ -440,6 +455,7 @@ void Inference::OnReceiveFMethod(const deepracer::service::fusiondata::proxy::me
     // loadModel의 경우, inference_node.cpp에서 먼저 처리한다. 이 부분 다시 파봐야할듯함
     m_Inference->loadModel("", );
 
+    //loadModel 먼저 처리하고 sensorCB해야하는거 아닌가?
 }
 
 
