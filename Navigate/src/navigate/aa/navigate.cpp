@@ -152,12 +152,12 @@ void Navigate::TaskReceiveIEventCyclic()
 {
     m_InferenceData->SetReceiveEventIEventHandler([this](const auto& inferenceMsg)
     {
-        InferenceCb(inferenceMsg);
+        NavigateCb(inferenceMsg);
     });
     m_InferenceData->ReceiveEventIEventCyclic();
 }
  
-void Navigate::InferenceCb(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg)
+void Navigate::NavigateCb(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg)
 {
     // navigateMsg 객체 생성
     deepracer::service::navigatedata::proxy::events::NEvent::SampleType navigateMsg;
