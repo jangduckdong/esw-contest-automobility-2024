@@ -21,6 +21,8 @@
 //json 사용
 #include "json/json.h"
 
+#include "deepracer/service/navigatedata/svnavigatedata_proxy.h"
+
 namespace servo
 {
 namespace aa
@@ -76,7 +78,7 @@ void Servo::Run()
 
 void Servo::TaskReceiveNEventCyclic()
 {
-    m_NavigateData->SetReceiveEventINventHandler([this](const auto& navigateMsg)
+    m_NavigateData->SetReceiveEventNEventHandler([this](const auto& navigateMsg)
     {
         Drive(navigateMsg);
     });
