@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : fusiondata.h
 /// SOFTWARE COMPONENT NAME           : FusionData
-/// GENERATED DATE                    : 2024-11-07 14:01:17
+/// GENERATED DATE                    : 2024-11-13 13:00:52
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifndef PARA_AA_GEN_SOFTWARE_COMPONENT_RPORT_INFERENCE_AA_FUSIONDATA_H
 #define PARA_AA_GEN_SOFTWARE_COMPONENT_RPORT_INFERENCE_AA_FUSIONDATA_H
@@ -46,16 +46,30 @@ public:
     /// @brief Terminate port
     void Terminate();
     
+    /// @brief Subscribe event, FEvent
+    void SubscribeFEvent();
+     
+    /// @brief Stop event subscription, FEvent
+    void StopSubscribeFEvent();
+     
+    /// @brief Event receive handler, FEvent
+    void ReceiveEventFEventTriggered();
+     
+    /// @brief Event receive handler, FEvent
+    void ReceiveEventFEventCyclic();
+     
+    /// @brief Read event data, FEvent
+    void ReadDataFEvent(ara::com::SamplePtr<deepracer::service::fusiondata::proxy::events::FEvent::SampleType const> samplePtr);
     
     
-    /// @brief Request with Response method using by software component, FMethod
-    void RequestFMethod();
     
 private:
     /// @brief Callback for find service
     void Find(ara::com::ServiceHandleContainer<deepracer::service::fusiondata::proxy::SvFusionDataProxy::HandleType> handles,
               ara::com::FindServiceHandle findHandle);
     
+    /// @brief Callback for event receiver, FEvent
+    void RegistReceiverFEvent();
     
     
 private:

@@ -413,7 +413,7 @@ void Inference::Run()
         -> RequestFMethod() -> 데이터 받았으면, OnReceiveFMethod() -> 모델 추론 -> WriteDataIEvent()
     */
 
-    m_workers.Async([this] {TaskRequestFMethod(); });
+    m_workers.Async([this] { m_InferenceData->SendEventIEventCyclic(); });
 
     
     m_workers.Wait();

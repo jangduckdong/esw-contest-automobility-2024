@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : svfusiondata_skeleton.h
 /// SERVICE INTERFACE NAME            : SvFusionData
-/// GENERATED DATE                    : 2024-11-07 14:01:17
+/// GENERATED DATE                    : 2024-11-13 13:00:51
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                                        
 /// CAUTION!! AUTOMATICALLY GENERATED FILE - DO NOT EDIT                                                   
@@ -38,6 +38,53 @@ class SvFusionDataSkeleton;
 /// @uptrace{SWS_CM_01009}
 namespace events
 {
+/// @uptrace{SWS_CM_00003}
+class FEvent
+{
+public:
+    /// @brief Type alias for type of event data
+    /// @uptrace{SWS_CM_00162, SWS_CM_90437}
+    using SampleType = deepracer::type::SensorFusionNode;
+    /// @brief Constructor
+    explicit FEvent(para::com::SkeletonInterface* interface) : mInterface(interface)
+    {
+    }
+    /// @brief Destructor
+    virtual ~FEvent() = default;
+    /// @brief Delete copy constructor
+    FEvent(const FEvent& other) = delete;
+    /// @brief Delete copy assignment
+    FEvent& operator=(const FEvent& other) = delete;
+    /// @brief Move constructor
+    FEvent(FEvent&& other) noexcept : mInterface(other.mInterface)
+    {
+    }
+    /// @brief Move assignment
+    FEvent& operator=(FEvent&& other) noexcept
+    {
+        mInterface = other.mInterface;
+        return *this;
+    }
+    /// @brief Send event with data to subscribing service consumers
+    /// @uptrace{SWS_CM_90437}
+    ara::core::Result<void> Send(const SampleType& data)
+    {
+        para::serializer::Serializer serializer{};
+        serializer.write(data);
+        auto payload = serializer.ensure();
+        return mInterface->SendEvent(kCallSign, payload);
+    }
+    /// @brief Returns unique pointer about SampleType
+    /// @uptrace{SWS_CM_90438}
+    ara::core::Result<ara::com::SampleAllocateePtr<SampleType>> Allocate()
+    {
+        return std::make_unique<SampleType>();
+    }
+    
+private:
+    para::com::SkeletonInterface* mInterface;
+    const std::string kCallSign = {"FEvent"};
+};
 } /// namespace events
 /// @uptrace{SWS_CM_01031}
 namespace fields
@@ -48,18 +95,12 @@ class SvFusionDataSkeleton
 {
 public:
     /// @uptrace{SWS_CM_00191}
-    struct FMethodOutput
-    {
-        deepracer::type::SensorFusionNode fusion_data;
-    };
     /// @brief Constructor
     /// @uptrace{SWS_CM_00002, SWS_CM_00152}
     SvFusionDataSkeleton(ara::core::InstanceSpecifier instanceSpec, ara::com::MethodCallProcessingMode mode = ara::com::MethodCallProcessingMode::kEvent)
         : mInterface(std::make_unique<para::com::SkeletonInterface>(instanceSpec, mode))
+        , FEvent(mInterface.get())
     {
-        mInterface->SetMethodCallHandler(kFMethodCallSign, [this](const std::vector<std::uint8_t>& data, const para::com::MethodToken token) {
-            HandleFMethod(data, token);
-        });
         mInterface->SetE2EErrorHandler([this](const ara::com::e2e::E2EErrorDomain& errorCode, ara::com::e2e::DataID dataID, ara::com::e2e::MessageCounter messageCounter) {
             E2EErrorHandler(errorCode, dataID, messageCounter);
         });
@@ -76,10 +117,8 @@ public:
     /// @uptrace{SWS_CM_00135}
     SvFusionDataSkeleton(SvFusionDataSkeleton&& other) noexcept
         : mInterface(std::move(other.mInterface))
+        , FEvent(std::move(other.FEvent))
     {
-        mInterface->SetMethodCallHandler(kFMethodCallSign, [this](const std::vector<std::uint8_t>& data, const para::com::MethodToken token) {
-            HandleFMethod(data, token);
-        });
         mInterface->SetE2EErrorHandler([this](const ara::com::e2e::E2EErrorDomain& errorCode, ara::com::e2e::DataID dataID, ara::com::e2e::MessageCounter messageCounter) {
             E2EErrorHandler(errorCode, dataID, messageCounter);
         });
@@ -90,9 +129,7 @@ public:
     SvFusionDataSkeleton& operator=(SvFusionDataSkeleton&& other) noexcept
     {
         mInterface = std::move(other.mInterface);
-        mInterface->SetMethodCallHandler(kFMethodCallSign, [this](const std::vector<std::uint8_t>& data, const para::com::MethodToken token) {
-            HandleFMethod(data, token);
-        });
+        FEvent = std::move(other.FEvent);
         mInterface->SetE2EErrorHandler([this](const ara::com::e2e::E2EErrorDomain& errorCode, ara::com::e2e::DataID dataID, ara::com::e2e::MessageCounter messageCounter) {
             E2EErrorHandler(errorCode, dataID, messageCounter);
         });
@@ -139,38 +176,10 @@ private:
     std::unique_ptr<para::com::SkeletonInterface> mInterface;
     
 public:
-    /// @brief Method, FMethod
-    /// @uptrace{SWS_CM_00191}
-    virtual ara::core::Future<FMethodOutput> FMethod() = 0;
+    /// @brief Event, FEvent
+    events::FEvent FEvent;
     
 private:
-    void HandleFMethod(const std::vector<std::uint8_t>& data, const para::com::MethodToken token)
-    {
-        std::uint8_t retResult{1};
-        std::vector<std::uint8_t> retData{};
-        auto future = FMethod();
-        auto result = future.GetResult();
-        if (result.HasValue())
-        {
-            FMethodOutput output = result.Value();
-            para::serializer::Serializer serializer{};
-            serializer.write(output.fusion_data);
-            retData = serializer.ensure();
-            retResult = 0;
-        }
-        else
-        {
-            ara::core::ErrorDomain::IdType domainId = result.Error().Domain().Id();
-            ara::core::ErrorDomain::CodeType errorCode = result.Error().Value();
-            para::serializer::Serializer serializer{};
-            serializer.write(0, true, 0, domainId);
-            serializer.write(0, true, 0, errorCode);
-            retData = serializer.ensure();
-            retResult = 1;
-        }
-        mInterface->ReturnMethod(kFMethodCallSign, retResult, retData, token);
-    }
-    const std::string kFMethodCallSign{"FMethod"};
 };
 } /// namespace skeleton
 } /// namespace fusiondata

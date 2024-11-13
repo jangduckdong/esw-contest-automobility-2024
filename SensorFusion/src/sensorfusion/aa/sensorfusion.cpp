@@ -24,7 +24,7 @@ namespace aa
  
 SensorFusion::SensorFusion()
     : m_logger(ara::log::CreateLogger("SSFU", "SWC", ara::log::LogLevel::kVerbose))
-    , m_workers(2)
+    , m_workers(3)
 {
 }
  
@@ -74,6 +74,7 @@ void SensorFusion::Run()
     
     m_workers.Async([this] { TaskReceiveCEventCyclic(); });
     m_workers.Async([this] { TaskReceiveLEventCyclic(); });
+    m_workers.Async([this] { m_FusionData->SendEventFEventCyclic(); });
 
     
     m_workers.Wait();

@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : fusiondata.h
 /// SOFTWARE COMPONENT NAME           : FusionData
-/// GENERATED DATE                    : 2024-11-07 14:01:17
+/// GENERATED DATE                    : 2024-11-13 13:00:52
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifndef PARA_AA_GEN_SOFTWARE_COMPONENT_PPORT_SENSORFUSION_AA_FUSIONDATA_H
 #define PARA_AA_GEN_SOFTWARE_COMPONENT_PPORT_SENSORFUSION_AA_FUSIONDATA_H
@@ -39,8 +39,6 @@ public:
     /// @brief Constructor
     SvFusionDataSkeletonImpl(ara::core::InstanceSpecifier instanceSpec, ara::com::MethodCallProcessingMode mode = ara::com::MethodCallProcessingMode::kEvent);
     
-    /// @brief Request with Response method, FMethod
-    ara::core::Future<SvFusionDataSkeleton::FMethodOutput> FMethod() override;
     
     
 private:
@@ -77,6 +75,18 @@ public:
     /// @brief Terminate port
     void Terminate();
     
+    /// @brief Write event data to buffer, FEvent
+    void WriteDataFEvent(const deepracer::service::fusiondata::skeleton::events::FEvent::SampleType& data);
+     
+    /// @brief Send event cyclic from buffer data, FEvent
+    void SendEventFEventCyclic();
+     
+    /// @brief Send event directly from buffer data, FEvent
+    void SendEventFEventTriggered();
+     
+    /// @brief Send event directly with argument, FEvent
+    void SendEventFEventTriggered(const deepracer::service::fusiondata::skeleton::events::FEvent::SampleType& data);
+     
 private:
     /// @brief Logger for this port
     ara::log::Logger& m_logger;
@@ -90,6 +100,8 @@ private:
     /// @brief AUTOSAR Port Interface
     std::shared_ptr<deepracer::service::fusiondata::skeleton::SvFusionDataSkeletonImpl> m_interface;
     
+    /// @brief Data for event, FEvent
+    deepracer::service::fusiondata::skeleton::events::FEvent::SampleType m_FEventData;
 };
  
 } /// namespace port

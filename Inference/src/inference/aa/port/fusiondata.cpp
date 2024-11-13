@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : fusiondata.cpp
 /// SOFTWARE COMPONENT NAME           : FusionData
-/// GENERATED DATE                    : 2024-11-07 14:01:17
+/// GENERATED DATE                    : 2024-11-13 13:00:52
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "inference/aa/port/fusiondata.h"
  
@@ -37,7 +37,6 @@ void FusionData::Start()
     m_logger.LogVerbose() << "FusionData::Start";
     
     // regist callback
-    // Find Service에 대한 핸들러 정의 -> 서비스 찾는 과정
     ara::core::InstanceSpecifier specifier{"Inference/AA/FusionData"};
     auto handler = [this](ara::com::ServiceHandleContainer<deepracer::service::fusiondata::proxy::SvFusionDataProxy::HandleType> handles,
                           ara::com::FindServiceHandle findHandle) {
@@ -59,7 +58,6 @@ void FusionData::Start()
     m_running = true;
 }
  
-// FPort 종료 처리 함수
 void FusionData::Terminate()
 {
     m_logger.LogVerbose() << "FusionData::Terminate";
@@ -69,9 +67,9 @@ void FusionData::Terminate()
     
     // clear service proxy
     if (m_interface)
-        // method는 R-R이기 때문에 Stop Sub 할 필요가 없다.
     {
-        // method는 R-R이기 때문에 Stop Sub 할 필요가 없다.
+        // stop subscribe
+        StopSubscribeFEvent();
         
         // stop find service
         m_interface->StopFindService(*m_findHandle);
@@ -80,16 +78,10 @@ void FusionData::Terminate()
         m_logger.LogVerbose() << "FusionData::Terminate::StopFindService";
     }
 }
-
-
-// Find Service에 대한 핸들러 함수
  
-// Find Service에 대한 핸들러 함수
 void FusionData::Find(ara::com::ServiceHandleContainer<deepracer::service::fusiondata::proxy::SvFusionDataProxy::HandleType> handles, ara::com::FindServiceHandle findHandle)
 {
     // check finding handles
-    // 찾고자 하는 핸들 체크
-    // 만약 핸들이 없다면 해당 함수는 return 된다.
     if (handles.empty())
     {
         m_logger.LogVerbose() << "FusionData::Find::Service Instances not found";
@@ -107,7 +99,6 @@ void FusionData::Find(ara::com::ServiceHandleContainer<deepracer::service::fusio
     }
     
     // create proxy
-    // Proxy 생성 : 핸들러가 이미 존재하는지 체크
     if (m_interface)
     {
         m_logger.LogVerbose() << "FusionData::Find::Proxy is already running";
@@ -122,44 +113,118 @@ void FusionData::Find(ara::com::ServiceHandleContainer<deepracer::service::fusio
         m_findHandle = std::make_shared<ara::com::FindServiceHandle>(findHandle);
         m_found = true;
         
-
-        // 이 아래에서 Event, Field는 Sub 요청을 보낸다
-        // 여기 // 
+        // subscribe events
+        SubscribeFEvent();
     }
 }
  
-void FusionData::RequestFMethod()
+void FusionData::SubscribeFEvent()
 {
     if (m_found)
     {
-        auto request = m_interface->FMethod();
-        request.wait();
-        auto response = request.GetResult();
-        if (response.HasValue())
+        // regist receiver handler
+        // if you want to enable it, please uncomment below code
+        // 
+        // RegistReceiverFEvent();
+        
+        // request subscribe
+        auto subscribe = m_interface->FEvent.Subscribe(1);
+        if (subscribe.HasValue())
         {
-            m_logger.LogVerbose() << "FusionData::RequestFMethod::Responded";
-            
-            auto result = response.Value();
-            // put your logic
-            
-            if (m_receiveMethodFMethodHandler != nullptr)
-            {
-                m_receiveMethodFMethodHandler(result);
-            }
+            m_logger.LogVerbose() << "FusionData::SubscribeFEvent::Subscribed";
         }
         else
         {
-            m_logger.LogError() << "FusionData::RequestFMethod::" << response.Error().Message();
+            m_logger.LogError() << "FusionData::SubscribeFEvent::" << subscribe.Error().Message();
         }
     }
 }
-
-void FusionData::SetReceiveMethodFMethodHandler(
-    std::function<void(const deepracer::service::fusiondata::proxy::methods::FMethod::Output&)> handler)
+ 
+void FusionData::StopSubscribeFEvent()
 {
-    m_receiveMethodFMethodHandler = handler;
+    if (m_found)
+    {
+        // request stop subscribe
+        m_interface->FEvent.Unsubscribe();
+        m_logger.LogVerbose() << "FusionData::StopSubscribeFEvent::Unsubscribed";
+    }
 }
-
+ 
+void FusionData::RegistReceiverFEvent()
+{
+    if (m_found)
+    {
+        // set callback
+        auto receiver = [this]() -> void {
+            return ReceiveEventFEventTriggered();
+        };
+        
+        // regist callback
+        auto callback = m_interface->FEvent.SetReceiveHandler(receiver);
+        if (callback.HasValue())
+        {
+            m_logger.LogVerbose() << "FusionData::RegistReceiverFEvent::SetReceiveHandler";
+        }
+        else
+        {
+            m_logger.LogError() << "FusionData::RegistReceiverFEvent::SetReceiveHandler::" << callback.Error().Message();
+        }
+    }
+}
+ 
+void FusionData::ReceiveEventFEventTriggered()
+{
+    if (m_found)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_interface->FEvent.GetSubscriptionState() == ara::com::SubscriptionState::kSubscribed)
+        {
+            auto recv = std::make_unique<ara::core::Result<size_t>>(m_interface->FEvent.GetNewSamples([&](auto samplePtr) {
+                FusionData::ReadDataFEvent(std::move(samplePtr));
+            }));
+            if (recv->HasValue())
+            {
+                m_logger.LogVerbose() << "FusionData::ReceiveEventFEvent::GetNewSamples::" << recv->Value();
+            }
+            else
+            {
+                m_logger.LogError() << "FusionData::ReceiveEventFEvent::GetNewSamples::" << recv->Error().Message();
+            }
+        }
+    }
+}
+ 
+void FusionData::ReceiveEventFEventCyclic()
+{
+    while (m_running)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_found)
+        {
+            if (m_interface->FEvent.GetSubscriptionState() == ara::com::SubscriptionState::kSubscribed)
+            {
+                auto recv = std::make_unique<ara::core::Result<size_t>>(m_interface->FEvent.GetNewSamples([&](auto samplePtr) {
+                    FusionData::ReadDataFEvent(std::move(samplePtr));
+                }));
+                if (recv->HasValue())
+                {
+                    m_logger.LogVerbose() << "FusionData::ReceiveEventFEvent::GetNewSamples::" << recv->Value();
+                }
+                else
+                {
+                    m_logger.LogError() << "FusionData::ReceiveEventFEvent::GetNewSamples::" << recv->Error().Message();
+                }
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+ 
+void FusionData::ReadDataFEvent(ara::com::SamplePtr<deepracer::service::fusiondata::proxy::events::FEvent::SampleType const> samplePtr)
+{
+    auto data = *samplePtr.Get();
+    // put your logic
+}
  
 } /// namespace port
 } /// namespace aa

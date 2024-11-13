@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : fusiondata.cpp
 /// SOFTWARE COMPONENT NAME           : FusionData
-/// GENERATED DATE                    : 2024-11-07 14:01:17
+/// GENERATED DATE                    : 2024-11-13 13:00:52
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "sensorfusion/aa/port/fusiondata.h"
  
@@ -29,22 +29,6 @@ SvFusionDataSkeletonImpl::SvFusionDataSkeletonImpl(ara::core::InstanceSpecifier 
 {
 }
  
-ara::core::Future<SvFusionDataSkeleton::FMethodOutput> SvFusionDataSkeletonImpl::FMethod()
-{
-    m_logger.LogVerbose() << "FusionData::FMethod::Requested";
-    
-    FMethodOutput response;
-    ara::core::Promise<FMethodOutput> promise;
-    
-    response.camera_data[0] = m_CameraData.camera_data0
-    response.camera_data[1] = m_CameraData.camera_data1;
-    response.lidar_data = m_LidarData.Lidar_data;
-    response.timestamp = m_CameraData.timestamp;
-    
-    promise.set_value(response);
-    return promise.get_future();
-}
- 
 } /// namespace skeleton
 } /// namespace fusiondata
 } /// namespace service
@@ -60,6 +44,7 @@ namespace port
 FusionData::FusionData()
     : m_logger(ara::log::CreateLogger("SSFU", "PORT", ara::log::LogLevel::kVerbose))
     , m_running{false}
+    , m_FEventData{{{0U, 0U, 0U}, {0U, 0U, 0U}, {0U, 0U, 0U}}, {0.0f, 0.0f, 0.0f}, 0LL}
 {
 }
  
@@ -99,6 +84,61 @@ void FusionData::Terminate()
     // stop offer service
     m_interface->StopOfferService();
     m_logger.LogVerbose() << "FusionData::Terminate::StopOfferService";
+}
+ 
+void FusionData::WriteDataFEvent(const deepracer::service::fusiondata::skeleton::events::FEvent::SampleType& data)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_FEventData = data;
+}
+ 
+void FusionData::SendEventFEventCyclic()
+{
+    while (m_running)
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            auto send = m_interface->FEvent.Send(m_FEventData);
+            if (send.HasValue())
+            {
+                m_logger.LogVerbose() << "FusionData::SendEventFEventCyclic::Send";
+            }
+            else
+            {
+                m_logger.LogError() << "FusionData::SendEventFEventCyclic::Send::" << send.Error().Message();
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+ 
+void FusionData::SendEventFEventTriggered()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto send = m_interface->FEvent.Send(m_FEventData);
+    if (send.HasValue())
+    {
+        m_logger.LogVerbose() << "FusionData::SendEventFEventTriggered::Send";
+    }
+    else
+    {
+        m_logger.LogError() << "FusionData::SendEventFEventTriggered::Send::" << send.Error().Message();
+    }
+}
+ 
+void FusionData::SendEventFEventTriggered(const deepracer::service::fusiondata::skeleton::events::FEvent::SampleType& data)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_FEventData = data;
+    auto send = m_interface->FEvent.Send(m_FEventData);
+    if (send.HasValue())
+    {
+        m_logger.LogVerbose() << "FusionData::SendEventFEventTriggered::Send";
+    }
+    else
+    {
+        m_logger.LogError() << "FusionData::SendEventFEventTriggered::Send::" << send.Error().Message();
+    }
 }
  
 } /// namespace port

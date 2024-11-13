@@ -12,17 +12,15 @@
     "minor-version" : "0",
     "client-id" : "undefined",
     "events" : [
+        {
+            "name" : "FEvent",
+            "event-id" : "1",
+            "transport" : "udp",
+            "max-segment-len" : "0",
+            "separation-time" : "0.0"
+        }
     ],
     "methods" : [
-        {
-            "name" : "FMethod",
-            "method-id" : "1",
-            "transport" : "udp",
-            "req-max-segment-len" : "0",
-            "req-separation-time" : "0.0",
-            "resp-max-segment-len" : "0",
-            "resp-separation-time" : "0.0"
-        }
     ],
     "fields" : [
     ]

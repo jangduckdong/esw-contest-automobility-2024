@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// GENERATED FILE NAME               : sensorfusion.h
 /// SOFTWARE COMPONENT NAME           : SensorFusion
-/// GENERATED DATE                    : 2024-11-07 14:01:17
+/// GENERATED DATE                    : 2024-11-13 13:00:52
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifndef PARA_AA_GEN_SOFTWARE_COMPONENT_SENSORFUSION_AA_H
 #define PARA_AA_GEN_SOFTWARE_COMPONENT_SENSORFUSION_AA_H
