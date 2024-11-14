@@ -41,7 +41,7 @@ const std::string STEREO = "STEREO_CAMERAS";
 const std::string FRONT = "FRONT_FACING_CAMERA";
 const std::string OBS = "observation";
 const std::string LEFT = "LEFT_CAMERA";
-
+std::int32_t lock=0;
  
 namespace inference
 {
@@ -116,24 +116,24 @@ namespace {
     /// @param imgProcessPtr Pointer to the image processing algorithm.
     /// @param imgData ROS message containing the image data.
     /// @param params Hash map of relevant parameters for image processing.
-    template<typename T, typename V> void load1DImg(V *inputPtr,
-                                                    cv::Mat &retImg,
-                                                    std::shared_ptr<InferTask::ImgProcessBase> imgProcessPtr,
-                                                    const sensor_msgs::msg::Image &imgData,
-                                                    const std::unordered_map<std::string, int> &params) {
-    imgProcessPtr->processImage(imgData, retImg, params);
-    if (retImg.empty()) {
-        throw InferenceExcept("No image after pre-process");
-    }
-    int height = retImg.rows;
-    int width = retImg.cols;
+    // template<typename T, typename V> void load1DImg(V *inputPtr,
+    //                                                 cv::Mat &retImg,
+    //                                                 std::shared_ptr<InferTask::ImgProcessBase> imgProcessPtr,
+    //                                                 const sensor_msgs::msg::Image &imgData,
+    //                                                 const std::unordered_map<std::string, int> &params) {
+    // imgProcessPtr->processImage(imgData, retImg, params);
+    // if (retImg.empty()) {
+    //     throw InferenceExcept("No image after pre-process");
+    // }
+    // int height = retImg.rows;
+    // int width = retImg.cols;
 
-    for (int  h = 0; h < height; h++) {
-        for (int w = 0; w < width; w++) {
-            inputPtr[h * width + w] = retImg.at<T>(h, w);
-        }
-    }
-    }
+    // for (int  h = 0; h < height; h++) {
+    //     for (int w = 0; w < width; w++) {
+    //         inputPtr[h * width + w] = retImg.at<T>(h, w);
+    //     }
+    // }
+    // }
 
     /// Helper method that loads multi channel images into the inference engine input
     /// @param inputPtr Pointer to the input data.
@@ -143,9 +143,9 @@ namespace {
     template<typename T, typename V> void loadStackImg(V *inputPtr,
                                                     cv::Mat &retImg, 
                                                     std::shared_ptr<InferTask::ImgProcessBase> imgProcessPtr,
-                                                    const sensor_msgs::msg::Image &imgData,
+                                                    const deepracer::service::fusiondata::proxy::events::FEvent::SampleType& fusiondata,
                                                     const std::unordered_map<std::string, int> &params) {
-        imgProcessPtr->processImage(imgData, retImg, params);
+        imgProcessPtr->processImage(fusiondata, retImg, params);
         if (retImg.empty()) {
             throw InferenceExcept("No image after-pre process");
         }
@@ -166,10 +166,9 @@ namespace {
     template<typename T, typename V> void loadStereoImg(V *inputPtr,
                                                     cv::Mat &retImg, 
                                                     std::shared_ptr<InferTask::ImgProcessBase> imgProcessPtr,
-                                                    const deepracer::service::fusiondata::proxy::methods::FMethod::Output& output,
+                                                    const deepracer::service::fusiondata::proxy::events::FEvent::SampleType& fusiondata,
                                                     const std::unordered_map<std::string, int> &params) {
-
-    imgProcessPtr->processImageVec(output, retImg, params);
+    imgProcessPtr->processImageVec(fusiondata, retImg, params);
     if (retImg.empty()) {
         throw InferenceExcept("No image after-pre process");
     }
@@ -191,9 +190,9 @@ namespace {
     /// @param inputPtr Pointer to the input data.
     /// @param lidarData ROS message containing the lidar data.
     void loadLidarData(float *inputPtr,
-                    const deepracer::service::fusiondata::proxy::methods::FMethod::Output& output) {
+                    const deepracer::service::fusiondata::proxy::events::FEvent::SampleType& fusiondata) {
     size_t pixelNum = 0;
-    for(const auto& lidar_value : output.fusion_data.lidar_data) {
+    for(const auto& lidar_value : fusiondata.lidar_data) {
         inputPtr[pixelNum] = lidar_value;
         ++pixelNum;
     }
@@ -202,20 +201,10 @@ namespace {
 
 
 namespace IntelInferenceEngine {
-    // RLInferenceModel::RLInferenceModel(std::shared_ptr<rclcpp::Node> inferenceNodePtr, const std::string &sensorSubName)
-    //  : doInference_(false)
-    // {
-    //     inferenceNode = inferenceNodePtr;
-    //     RCLCPP_INFO(inferenceNode->get_logger(), "Initializing RL Model");
-    //     RCLCPP_INFO(inferenceNode->get_logger(), "%s", sensorSubName.c_str());
-    //     // Subscribe to the sensor topic and set the call back
-    //     sensorSub_ = inferenceNode->create_subscription<deepracer_interfaces_pkg::msg::EvoSensorMsg>(sensorSubName, 10, std::bind(&IntelInferenceEngine::RLInferenceModel::sensorCB, this, std::placeholders::_1));
-    //     resultPub_ = inferenceNode->create_publisher<deepracer_interfaces_pkg::msg::InferResultsArray>("rl_results", 1);
-    // }
 
-    // RLInferenceModel::~RLInferenceModel() {
-    //     stopInference();
-    // }
+    RLInferenceModel::RLInferenceModel(){
+
+    }
 
     bool RLInferenceModel::loadModel(const char* artifactPath,
                             std::shared_ptr<InferTask::ImgProcessBase> imgProcess) {
@@ -257,11 +246,10 @@ namespace IntelInferenceEngine {
     //     doInference_ = false;
     // }
 
-    void RLInferenceModel::sensorCB(const deepracer::service::fusiondata::proxy::methods::FMethod::Output& output) {
+    void RLInferenceModel::sensorCB(const deepracer::service::fusiondata::proxy::events::FEvent::FEvent::SampleType& fusiondata) {
         try {
             for(size_t i = 0; i < inputNamesArr_.size(); ++i) {
                 auto inputPtr = inferRequest_.GetBlob(inputNamesArr_[i])->buffer().as<InferenceEngine::PrecisionTrait<InferenceEngine::Precision::FP32>::value_type *>();
-
                 /*
                 deepracer_interfaces_pkg::msg::EvoSensorMsg::
                 */
@@ -270,15 +258,15 @@ namespace IntelInferenceEngine {
                 cv::Mat retData;
                 if (inputNamesArr_[i].find(STEREO) != std::string::npos)
                 {
-                    loadStereoImg<cv::Vec2b, float>(inputPtr, retData, imgProcess_, output, paramsArr_[i]);
+                    loadStereoImg<cv::Vec2b, float>(inputPtr, retData, imgProcess_, fusiondata, paramsArr_[i]);
                 }
                 else if (inputNamesArr_[i].find(FRONT) != std::string::npos
                           || inputNamesArr_[i].find(LEFT) != std::string::npos
                           || inputNamesArr_[i].find(OBS) != std::string::npos) {
-                    load1DImg<uchar, float>(inputPtr, retData, imgProcess_, output, paramsArr_[i]);
+                    load1DImg<uchar, float>(inputPtr, retData, imgProcess_, fusiondata, paramsArr_[i]);
                 }
                 else if (inputNamesArr_[i].find(LIDAR) != std::string::npos){
-                    loadLidarData(inputPtr, output);
+                    loadLidarData(inputPtr, fusiondata);
                 }
                 else {
                     // RCLCPP_ERROR(inferenceNode->get_logger(), "Invalid input head");
@@ -306,7 +294,7 @@ namespace IntelInferenceEngine {
             deepracer::type::InferenceDataNode inferMsg;
 
             // 추가한 코드: 타임스탬프 값
-            inferMsg.timestamp = output.timestamp;
+            inferMsg.timestamp = fusiondata.timestamp;
 
             for (size_t label = 0; label < outputDims[1]; ++label) {
                 //삭제한 코드: 딥레이서 데이터 타입말고 (1줄)
@@ -329,6 +317,7 @@ namespace IntelInferenceEngine {
             
             //추가한 코드: 데이터 전송 (1줄)
             m_InferenceData->WriteDataNEvent(inferMsg);
+            lock=0;
             /*
             
             */
@@ -344,6 +333,7 @@ namespace IntelInferenceEngine {
 Inference::Inference()
     : m_logger(ara::log::CreateLogger("INFR", "SWC", ara::log::LogLevel::kVerbose)) // Logger 객체 초기화
     , m_workers(2)  // Run() 함수에서 m_workers.Async에 등록가능한 함수 갯수
+
 {
 }
  
@@ -361,16 +351,20 @@ bool Inference::Initialize()
     m_FusionData = std::make_shared<inference::aa::port::FusionData>();
     // inference RPort data
     m_InferenceData = std::make_shared<inference::aa::port::InferenceData>();
+    // 여기서 Inference_load_model 객체 생성
+    m_Model = std::make_shared<inference::aa::IntelInferenceEngine::RLInferenceModel>();
+    m_Model->loadModel("/opt/어쩌고","");
     
 
     return init;
 }
  
 // 컴포넌트 시작 함수
+
 void Inference::Start()
 {
     m_logger.LogVerbose() << "Inference::Start";
-    
+        
     m_FusionData->Start();
     m_InferenceData->Start();
     
@@ -422,53 +416,31 @@ void Inference::Run()
 // FusionData Event의 Cyclic 수신처리에 대한 수행
 void Inference::TaskReceiveFEventCyclic()
 {
+
+
     m_FusionData->SetReceiveEventFEventHandler([this](const auto& FEvent)
-    {
+    {   if(!lock){
+        lock=1;
         OnReceiveFEvent(FEvent);
+        
+        }
     });
     m_FusionData->ReceiveEventFEventCyclic();
 }
 
 
-// FusionData에 대한 요청
-void Inference::TaskRequestFMethod()
-{
-    // FMethod 핸들러 등록
-    m_FusionData->SetReceiveMethodFMethodHandler([this](const auto& output)
-    {
-        // 여기서 output은 Camera & Lidar 정보를 담는 구조체
-        OnReceiveFMethod(output);
-    })
-
-
-    // Fusion Data 요청
-    m_logger.LogInfo() << "Inference::RequestFMethod (sensorfusion)";
-    m_FusionData->RequestFMethod(deepracer::type::SensorFusionNode)
-    
-}
-
 
 // Fusion FEvent에 대한 Response를 받았을시의 처리 함수
 void Inference::OnReceiveFEvent(const deepracer::service::fusiondata::proxy::events::FEvent::FEvent::SampleType& FEvent)
 {
-    // 추론 시작 ( 수정 필요 )
-    m_Inference->startInference(); 이거 어떻게 처리하지 ...
-
-    Inference class 안에다가 RLInferenceModel을 넣어야댐 .. 
 
 
     m_logger.LogInfo() << "Inference::OnReceiveFMethod:" << FEvent;
 
     
-    // 데이터 전처리
-    m_Inference->sensorCB(FEvent);
+    // 데이터 전처리 및 추론
+    m_Model->sensorCB(FEvent);
 
-    // 모델 추론 ( 수정 필요 )
-    // loadModel(모델 경로, 처리된 이미지)
-    // loadModel의 경우, inference_node.cpp에서 먼저 처리한다. 이 부분 다시 파봐야할듯함
-    m_Inference->loadModel("", );
-
-    //loadModel 먼저 처리하고 sensorCB해야하는거 아닌가?
 }
 
 
