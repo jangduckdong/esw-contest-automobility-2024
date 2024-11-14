@@ -224,7 +224,7 @@ void LidarData::ReadDataLEvent(ara::com::SamplePtr<deepracer::service::lidardata
 {
     auto data = *samplePtr.Get();
 
-    m_logger.LogVerbose() << "LidarData::ReadDataLevent::" << data;
+    m_logger.LogVerbose() << "LidarData::ReadDataLevent::" << data.lidar_data[0];
 
     //CEvent 핸들러가 등록되어 있다면 해당 핸들러는 값과 함께 호출됨
     if(m_receiveEventLEventHandler != nullptr)
@@ -234,7 +234,7 @@ void LidarData::ReadDataLEvent(ara::com::SamplePtr<deepracer::service::lidardata
 }
 
 void LidarData::SetReceiveEventLEventHandler(
-    std::function<void(const deepracer::service::LidarData::proxy::events::LEvent::SampleType&)> handler)
+    std::function<void(const deepracer::service::lidardata::proxy::events::LEvent::SampleType&)> handler)
 {
     m_receiveEventLEventHandler = handler;
 }

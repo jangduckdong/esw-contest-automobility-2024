@@ -33,10 +33,11 @@ namespace type
 {
 struct SensorFusionNode
 {
-    deepracer::type::CameraDataVector camera_data;
+    deepracer::type::CameraDataVector camera_data0;
+    deepracer::type::CameraDataVector camera_data1;
     deepracer::type::FloatVector lidar_data;
     std::int64_t timestamp;
-    PARA_STRUCTURE(SensorFusionNode, camera_data, lidar_data, timestamp);
+    PARA_STRUCTURE(SensorFusionNode, camera_data0, camera_data1, lidar_data, timestamp);
 };
 } /// namespace type
 } /// namespace deepracer

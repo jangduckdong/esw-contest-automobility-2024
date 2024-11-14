@@ -111,6 +111,9 @@ private:
     deepracer::service::cameradata::skeleton::events::CEvent::SampleType m_CEventData;
 
     std::vector<cv::VideoCapture> videoCaptureList_;
+
+    cv::VideoCapture cap1;
+    cv::VideoCapture cap2;
 };
  
 } /// namespace port

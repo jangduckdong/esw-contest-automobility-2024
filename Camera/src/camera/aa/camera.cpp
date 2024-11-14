@@ -43,8 +43,13 @@ bool Camera::Initialize() {
     m_CameraData = std::make_shared<camera::aa::port::CameraData>();
 
     // 카메라 인덱스 리스트 전달
-    std::vector<int> cameraIdxList = {0, 1};
-    return m_CameraData->scanCameraIndex(cameraIdxList);
+    std::vector<int> cameraIdxList = {0, 2};
+    if (!m_CameraData->scanCameraIndex(cameraIdxList)) {
+        m_logger.LogError() << "카메라 초기화에 실패했습니다.";
+        return false;
+    }
+    m_CameraData->Start();
+    return true;
 }
  
 void Camera::Start()
@@ -60,8 +65,9 @@ void Camera::Start()
 void Camera::Terminate()
 {
     m_logger.LogVerbose() << "Camera::Terminate";
-    
+    m_running = false;
     m_CameraData->Terminate();
+    m_workers.Wait();
 }
  
 void Camera::Run()
@@ -74,6 +80,7 @@ void Camera::Run()
 
     // 위의 Async로 등록된 함수들이 모두 리턴될 때까지 기다린다.
     m_workers.Wait();
+    m_logger.LogVerbose() << "모든 비동기 작업이 종료됨::bye";
 }
 
 void Camera::TaskGenerateREventValue()

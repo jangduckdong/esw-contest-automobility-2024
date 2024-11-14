@@ -14,8 +14,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUSION HEADER FILES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include "sensorfusion/aa/sensorfusion.h"
- 
+#include "sensorfusion/aa/sensorfusion.h" 
+#include "deepracer/service/cameradata/svcameradata_proxy.h"
+#include "deepracer/service/lidardata/svlidardata_proxy.h"
 
 namespace sensorfusion
 {
@@ -24,7 +25,10 @@ namespace aa
  
 SensorFusion::SensorFusion()
     : m_logger(ara::log::CreateLogger("SSFU", "SWC", ara::log::LogLevel::kVerbose))
-    , m_workers(2)
+    , m_workers(3)
+    // , m_sensorLData{{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}}
+    // , m_sensorCData{{0U, 0U, 0U}, {0U, 0U, 0U}}
+    // , m_sensorTData{0LL}
 {
 }
  
@@ -74,7 +78,7 @@ void SensorFusion::Run()
     
     m_workers.Async([this] { TaskReceiveCEventCyclic(); });
     m_workers.Async([this] { TaskReceiveLEventCyclic(); });
-
+    m_workers.Async([this] { m_FusionData->SendEventFEventCyclic();});
     
     m_workers.Wait();
 }
@@ -98,13 +102,24 @@ void SensorFusion::TaskReceiveLEventCyclic()
     m_LidarData->ReceiveEventLEventCyclic();
 }
 // CameraData CEvent를 받았을시의 처리 함수
-void SensorFusion::OnReceiveCEvent(const deepracer::service::cameradata::proxy::events::CEvent::SampleType& sample)
+//const deepracer::service::cameradata::proxy::events::CEvent::SampleType& sample
+void SensorFusion::OnReceiveCEvent(const deepracer::type::CameraDataNode& sample)
 {
-    m_logger.LogInfo() << "SensorFusion::OnReceiveCEvent:" << sample;
+    m_logger.LogInfo() << "SensorFusion::OnReceiveCEvent:timestemp" << sample.timestamp;
+    deepracer::service::cameradata::proxy::events::CEvent::SampleType camera_sample;
+    camera_sample.camera_data0 = sample.camera_data0;
+    camera_sample.camera_data1 = sample.camera_data1;
+    m_FusionData->WriteDataFEventCamera(camera_sample);
 }
-void SensorFusion::OnReceiveLEvent(const deepracer::service::lidardata::proxy::events::LEvent::SampleType& sample) //LEvent?
+//const deepracer::service::lidardata::proxy::events::LEvent::SampleType& sample
+void SensorFusion::OnReceiveLEvent(const deepracer::type::LidarDataNode& sample)
 {
-    m_logger.LogInfo() << "SensorFusion::OnReceiveLEvent:" << sample;
+    m_logger.LogInfo() << "SensorFusion::OnReceiveLEvent:timestemp" << sample.timestamp;
+
+    deepracer::service::fusiondata::skeleton::events::FEvent::SampleType lidar_sample;
+    lidar_sample.lidar_data = sample.lidar_data;
+    lidar_sample.timestamp = sample.timestamp;
+    m_FusionData->WriteDataFEventLidar(lidar_sample);
 }
  
 } /// namespace aa

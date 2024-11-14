@@ -90,6 +90,8 @@ private:
     /// @brief AUTOSAR Port Interface
     std::shared_ptr<deepracer::service::fusiondata::skeleton::SvFusionDataSkeletonImpl> m_interface;
     
+    deepracer::service::fusiondata::skeleton::events::FEvent::SampleType m_FEventData;
+
 };
  
 } /// namespace port

@@ -224,7 +224,7 @@ void CameraData::ReadDataCEvent(ara::com::SamplePtr<deepracer::service::camerada
 {
     auto data = *samplePtr.Get();
     
-    m_logger.LogVerbose() << "CameraData::ReadDataCEvent::" << data;
+    m_logger.LogVerbose() << "CameraData::ReadDataCEvent::" << data.camera_data0[0];
 
     //CEvent 핸들러가 등록되어 있다면 해당 핸들러는 값과 함께 호출됨
     if(m_receiveEventCEventHandler != nullptr)
@@ -234,7 +234,7 @@ void CameraData::ReadDataCEvent(ara::com::SamplePtr<deepracer::service::camerada
 }
 
 void CameraData::SetReceiveEventCEventHandler(
-    std::function<void(const deepracer::service::CameraData::proxy::events::CEvent::SampleType&)> handler)
+    std::function<void(const deepracer::service::cameradata::proxy::events::CEvent::SampleType&)> handler)
 {
     m_receiveEventCEventHandler = handler;
 }
