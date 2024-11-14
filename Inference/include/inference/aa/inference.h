@@ -19,7 +19,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "inference/aa/port/fusiondata.h"
 #include "inference/aa/port/inferencedata.h"
-
+#include "inference_engine.hpp"
 #include "para/swc/port_pool.h"
 
 namespace inference

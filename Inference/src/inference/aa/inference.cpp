@@ -17,11 +17,7 @@
 
 #include "inference/aa/inference.h"
 #include "inference/aa/intel_inference_eng.hpp"
-/// Intel Open Vino specific headers
-// #include "ie_plugin_dispatcher.hpp"
-// #include "ie_plugin_ptr.hpp"
-// #include "cpp/ie_cnn_net_reader.h"
-// ROS2 message headers
+#include "inference/aa/image_process.hpp"
 #include "deepracer_interfaces_pkg/msg/infer_results.hpp"
 #include "deepracer_interfaces_pkg/msg/infer_results_array.hpp"
 
@@ -68,15 +64,6 @@ namespace {
         /// Store message in class so that the what method can dump it when invoked.
         const std::string msg_;
     };
-        /// Helper method that loads the multi head model into the desired plugin.
-        /// @returns Inference request object that will be used to perform inference
-        /// @param artifactPath Path to the artifact (xml) file
-        /// @param device String value of the device being used (CPU/GPU)
-        /// @param core Reference to a InferenceEngine core object.
-        /// @param inputName Reference to the vector of input layer names
-        /// @param outputName Reference to the output layers name, the method will populate this string
-        /// @param inputPrec The precision to use for the input layer
-        /// @param outputPrec The precision to use for the output layer
         InferenceEngine::InferRequest setMultiHeadModel(std::string artifactPath, const std::string &device,
                                             InferenceEngine::Core core, std::vector<std::string> &inputNamesArr,
                                             std::string &outputName, const InferenceEngine::Precision &inputPrec,
@@ -234,13 +221,13 @@ namespace IntelInferenceEngine {
         return true;
     }
 
-    void RLInferenceModel::startInference() {
-        // Reset the image processing algorithm.
-        if (imgProcess_) {
-            imgProcess_->reset();
-        }
-        // doInference_ = true;
-    }
+    // void RLInferenceModel::startInference() {
+    //     // Reset the image processing algorithm.
+    //     if (imgProcess_) {
+    //         imgProcess_->reset();
+    //     }
+    //     // doInference_ = true;
+    // }
 
     // void RLInferenceModel::stopInference() {
     //     doInference_ = false;
@@ -311,8 +298,6 @@ namespace IntelInferenceEngine {
                 inferData.y_max = -1.0;
                 inferMsg.results.push_back(inferData);
             }
-            // Send results to all subscribers.
-            // resultPub_->publish(inferMsg);
             // 이 아래에 navigate로 Event를 보내는 코드 작성 ( 수정 필요 )
             
             //추가한 코드: 데이터 전송 (1줄)
@@ -323,7 +308,6 @@ namespace IntelInferenceEngine {
             */
         }
         catch (const std::exception &ex) {
-            // RCLCPP_ERROR(inferenceNode->get_logger(), "Inference failed %s", ex.what());
         }
     }
 }
@@ -353,7 +337,7 @@ bool Inference::Initialize()
     m_InferenceData = std::make_shared<inference::aa::port::InferenceData>();
     // 여기서 Inference_load_model 객체 생성
     m_Model = std::make_shared<inference::aa::IntelInferenceEngine::RLInferenceModel>();
-    m_Model->loadModel("/opt/어쩌고","");
+    m_Model->loadModel("/opt/aws/deepracer/artifacts/jangdeokdong-model/",std::make_shared<Grey>(false, false));
     
 
     return init;
