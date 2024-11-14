@@ -16,7 +16,8 @@
 
 #include "inference/aa/image_process.hpp"
 
-namespace {
+namespace 
+{
     /// Constants fro pre-processing
     //! TODO Make these configurable once we have a handle on what the user will be
     //! expected to input.
