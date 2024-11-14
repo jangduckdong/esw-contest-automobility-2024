@@ -39,19 +39,11 @@ namespace aa
 Lidar::Lidar()
     : m_logger(ara::log::CreateLogger("LID", "SWC", ara::log::LogLevel::kVerbose))
     , m_workers(2)
-    , drv(nullptr) {}
 {
 }
  
 Lidar::~Lidar()
 {
-    // // 드라이버 메모리 해제 및 연결 해제
-    // if (m_drv) {
-    //     m_drv->stop();
-    //     m_drv->setMotorSpeed(0);
-    //     delete m_drv;
-    //     m_drv = nullptr;
-    // }
 }
  
 bool Lidar::Initialize()
@@ -66,6 +58,8 @@ bool Lidar::Initialize()
     if (!drv) {
         m_logger.LogError() << "Insufficient memory for Lidar driver";
         return false;
+    }else{
+        m_logger.LogError() << "Lidar 인스턴스 생성 성공";
     }
     // 장치 연결
     IChannel* channel = *createSerialPortChannel(dev, baudrate);
@@ -73,10 +67,14 @@ bool Lidar::Initialize()
     if (!SL_IS_OK(res)) {
         m_logger.LogError() << "Failed to connect to Lidar device";
         return false;
+    }else{
+        m_logger.LogError() << "Lidar 장치 연결 성공";
     }
-    // 스캔 시작
-    drv->setMotorSpeed();
-    drv->startScan(0,1);
+    // 드라이버 중지 및 정리
+    drv->stop();
+    drv = NULL;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+
     return true;  // 초기화 성공 시 true 반환
 }
  
@@ -97,13 +95,11 @@ void Lidar::Terminate()
     m_LidarData->Terminate();
 
     // 드라이버 중지 및 정리
-    if (drv) {
-        drv->stop();
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        drv->setMotorSpeed(0);
-        delete drv;
-        drv = NULL;
-    }
+    drv->stop();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    drv->setMotorSpeed(0);
+    drv.reset();
+    drv = NULL;
 }
  
 void Lidar::Run()
