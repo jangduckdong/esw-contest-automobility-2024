@@ -18,10 +18,10 @@
 #define IMAGE_PROCESS_HPP
 
 #include "inference/aa/port/fusiondata.h"
-#include "inference/aa/port/simulatordata.h"
 #include "inference/aa/port/inferencedata.h"
 #include <unordered_map>
-
+#include <vector>
+#include <opencv2/opencv.hpp>
 namespace inference
 {
 namespace aa
@@ -50,7 +50,7 @@ namespace InferTask {
         virtual void processImage(const deepracer::service::fusiondata::proxy::events::FEvent::SampleType& fusiondata, cv::Mat& retImg,
                                   const std::unordered_map<std::string, int> &params) override;
         virtual void processImageVec(const deepracer::service::fusiondata::proxy::events::FEvent::SampleType& fusiondata, cv::Mat& retImg,
-                                     const std::unordered_map<std::string, int> &params) override {(void)frameDataArr;(void)retImg;(void)params;}
+                                     const std::unordered_map<std::string, int> &params) override {(void)fusiondata;(void)retImg;(void)params;}
         virtual void reset() override {}
         virtual const std::string getEncode() const;
     };
@@ -80,7 +80,7 @@ namespace InferTask {
         virtual void processImage(const deepracer::service::fusiondata::proxy::events::FEvent::SampleType& fusiondata, cv::Mat& retImg,
                                   const std::unordered_map<std::string, int> &params) override;
         virtual void processImageVec(const deepracer::service::fusiondata::proxy::events::FEvent::SampleType& fusiondata, cv::Mat& retImg,
-                                     const std::unordered_map<std::string, int> &params) override {(void)frameDataArr;(void)retImg;(void)params;}
+                                     const std::unordered_map<std::string, int> &params) override {(void)fusiondata;(void)retImg;(void)params;}
         virtual void reset() override;
         virtual const std::string getEncode() const;
     private:

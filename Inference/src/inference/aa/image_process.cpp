@@ -15,7 +15,8 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "inference/aa/image_process.hpp"
-
+#include <opencv2/opencv.hpp>
+#include <vector>
 namespace
 {
     const int THRESHOLD = 0;

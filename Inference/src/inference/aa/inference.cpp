@@ -16,10 +16,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "inference/aa/inference.h"
-#include "inference/aa/intel_inference_eng.hpp"
+// #include "inference/aa/intel_inference_eng.hpp"
 #include "inference/aa/image_process.hpp"
-#include "deepracer_interfaces_pkg/msg/infer_results.hpp"
-#include "deepracer_interfaces_pkg/msg/infer_results_array.hpp"
 
 #include <exception>
 #define RAD2DEG(x) ((x)*180./M_PI)

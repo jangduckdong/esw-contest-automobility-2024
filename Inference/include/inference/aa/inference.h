@@ -21,6 +21,8 @@
 #include "inference/aa/port/inferencedata.h"
 #include "inference_engine.hpp"
 #include "para/swc/port_pool.h"
+#include "inference/aa/image_process.hpp"
+
 
 namespace inference
 {
@@ -30,17 +32,17 @@ namespace inference
         // namespace Intel 머시기 내일 등록하기
         namespace IntelInferenceEngine
         {
-            class RLInferenceModel : public InferTask::InferenceBase
+            class RLInferenceModel : public InferTask
             {
             public:
                 RLInferenceModel::RLInferenceModel() {}
 
-                virtual bool RLInferenceModel::loadModel(const char *artifactPath, std::shared_ptr<InferTask::ImgProcessBase> imgProcess) {}
+                virtual bool RLInferenceModel::loadModel(const char *artifactPath, std::shared_ptr<ImgProcessBase> imgProcess) {}
                 virtual void RLInferenceModel::startInference() {}
                 void RLInferenceModel::sensorCB(const deepracer::service::fusiondata::proxy::events::FEvent::FEvent::SampleType& output) {}
 
             private:
-                std::shared_ptr<InferTask::ImgProcessBase> imgProcess_;
+                std::shared_ptr<ImgProcessBase> imgProcess_;
                 InferenceEngine::Core core_;
                 /// Inference request object
                 InferenceEngine::InferRequest inferRequest_;
