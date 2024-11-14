@@ -18,7 +18,7 @@
 /// INCLUSION HEADER FILES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "lidar/aa/port/lidardata.h"
-#include "sl_lidar.h"
+#include "sl_lidar.h" 
  
 #include "para/swc/port_pool.h"
  
@@ -61,9 +61,9 @@ private:
     /// @brief Instance of Port {Lidar.LidarData}
     std::shared_ptr<lidar::aa::port::LidarData> m_LidarData;
 
-    std::shared_ptr<sl_lidar::ILidarDriver> drv;
-
     bool m_running;
+
+    std::shared_ptr<sl::ILidarDriver> drv;
 };
  
 } /// namespace aa

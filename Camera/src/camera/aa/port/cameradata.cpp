@@ -20,6 +20,8 @@
 #include <stdint.h>
 
 #include "camera/aa/port/cameradata.h"
+
+using namespace cv;
  
 namespace deepracer
 {
@@ -96,56 +98,69 @@ void CameraData::Terminate()
 /*==================================================*/
 // 카메라 찾기
 bool CameraData::scanCameraIndex(const std::vector<int32_t>& cameraIdxList) {
-    for (auto idx : cameraIdxList) {
-        m_logger.LogVerbose() << "스캔 중: 카메라 인덱스 " << idx;
+    m_logger.LogVerbose() << "스캔 중: 카메라 인덱스 ";
 
-        cv::VideoCapture cap(idx, cv::CAP_V4L); // 카메라 캡처 생성
-        cv::Mat test_frame;
-        cap >> test_frame;
+    // 카메라에서 프레임 캡처
+    VideoCapture cap1(0);
+    VideoCapture cap2(2);
 
-        if (test_frame.empty() || !cap.isOpened()) {
-            m_logger.LogError() << "카메라를 열 수 없습니다: 인덱스 " << idx;
-            continue;
-        }
-
-        cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-        videoCaptureList_.emplace_back(std::move(cap));
+    if (!cap1.isOpened()) {
+        std::cerr << "카메라1을 열 수 없습니다." << std::endl;
+        return -1;
     }
 
+    if (!cap2.isOpened()) {
+        std::cerr << "카메라2를 열 수 없습니다." << std::endl;
+        return -1;
+    }
+
+    videoCaptureList_.emplace_back(std::move(cap1));
+    videoCaptureList_.emplace_back(std::move(cap2));
+
+    cap1.release();
+    cap2.release();
     return !videoCaptureList_.empty();
 }
 // 프레임 저장하기
 void CameraData::produceFrames() {
     // 임시 데이터 구조체 생성
     deepracer::service::cameradata::skeleton::events::CEvent::SampleType frame_data;  // 임시 데이터 구조체 생성
+    VideoCapture cap1(0);
+    VideoCapture cap2(2);
 
-    // 각 카메라에서 프레임 캡처 및 JPEG 인코딩
-    for (auto i = 0; i < videoCaptureList_.size() && i < 2; ++i) {  // 최대 두 카메라 사용
-        cv::Mat frame;
-        videoCaptureList_[i] >> frame;
+    // MJPEC 코덱 및 크기 설정
+    cap1.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
+    cap1.set(CAP_PROP_FRAME_WIDTH, 160);
+    cap1.set(CAP_PROP_FRAME_HEIGHT, 120);
 
-        if (frame.empty()) {
-            m_logger.LogError() << "프레임을 가져올 수 없습니다: 카메라 인덱스 " << i;
-            continue;
-        }
+    cap2.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
+    cap2.set(CAP_PROP_FRAME_WIDTH, 160);
+    cap2.set(CAP_PROP_FRAME_HEIGHT, 120);
+    while(true) {
+        // 프레임 가져오기
+        Mat frame1;
+        Mat frame2;
+	    std::vector<uchar> buffer1;
+        std::vector<uchar> buffer2;
+        cap1 >> frame1;
+        cap2 >> frame2;
 
-        // 프레임을 JPEG 형식으로 인코딩
-        std::vector<uint8_t> buffer;
-        cv::imencode(".jpeg", frame, buffer);
-
+// 전송 모듈 코드 //////////////////////////////////////////////////////////// 
+	    // 프레임 직렬화
+	    imencode(".jpeg", frame1, buffer1);
+        imencode(".jpeg", frame2, buffer2);
+    
         // 첫 번째 또는 두 번째 카메라 데이터에 저장
-        if (i == 0) {
-            std::copy(buffer.begin(), buffer.begin() + std::min(buffer.size(), frame_data.camera_data0.size()), frame_data.camera_data0.begin());
-        } else if (i == 1) {
-            std::copy(buffer.begin(), buffer.begin() + std::min(buffer.size(), frame_data.camera_data1.size()), frame_data.camera_data1.begin());
-        }
-    }
+        std::copy(buffer1.begin(), buffer1.begin() + std::min(buffer1.size(), frame_data.camera_data0.size()), frame_data.camera_data0.begin());
+        std::copy(buffer2.begin(), buffer2.begin() + std::min(buffer2.size(), frame_data.camera_data1.size()), frame_data.camera_data1.begin());
+
 
     // 타임스탬프 설정
     frame_data.timestamp = getCurrentTimestamp();
 
     // frame_data를 m_CEventData에 저장
     WriteDataCEvent(frame_data);
+    }
 }
 // 밀리초 단위 타임스탬프 반환
 int64_t CameraData::getCurrentTimestamp() const {
@@ -170,7 +185,8 @@ void CameraData::SendEventCEventCyclic()
             auto send = m_interface->CEvent.Send(m_CEventData);
             if (send.HasValue())
             {
-                m_logger.LogVerbose() << "CameraData::SendEventCEventCyclic::Send";
+                m_logger.LogVerbose() << "CameraData::SendEventCEventCyclic::Send"
+                <<m_CEventData.camera_data0.size();
             }
             else
             {

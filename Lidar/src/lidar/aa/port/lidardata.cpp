@@ -12,6 +12,10 @@
 /// SOFTWARE COMPONENT NAME           : LidarData
 /// GENERATED DATE                    : 2024-11-07 14:01:17
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <vector>
+#include <memory>
+#include <chrono>
+#include <thread>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -55,7 +59,7 @@ namespace port
 LidarData::LidarData()
     : m_logger(ara::log::CreateLogger("LID", "PORT", ara::log::LogLevel::kVerbose))
     , m_running{false}
-    , m_LEventData{0LL, {0.0f, 0.0f, 0.0f}}
+    , m_LEventData{0LL, {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}}
 {
 }
 
@@ -98,20 +102,55 @@ void LidarData::Terminate()
 }
  
 void LidarData::produceScanning() {
+    m_logger.LogVerbose() << "LidarData::Start::produceScanning";
+    const char* dev = "/dev/ttyUSB0";
+    uint32_t baudrate = 115200;
+    unsigned int op_result;
+
     // 드라이버 인스턴스 생성
 	ILidarDriver * drv = *createLidarDriver();
-    // scan data 및 존별 최소 거리 초기화
-    deepracer::service::lidardata::skeleton::events::LEevent::SampleType& scan_data;
-    for (size_t i = 0; i < 8; i++) {
-        scan_data[i].distance = 9999;
+    if (!drv) {
+        m_logger.LogError() << "LidarData::Insufficient memory for Lidar driver";
+    }else{
+        m_logger.LogError() << "LidarData::Lidar 인스턴스 생성 성공";
     }
+    // 장치 연결
+    IChannel* channel = *createSerialPortChannel(dev, baudrate);
+    auto res = drv->connect(channel);
+    if (!SL_IS_OK(res)) {
+        m_logger.LogError() << "LidarData::Failed to connect to Lidar device";
+    }else{
+        m_logger.LogError() << "LidarData::Lidar 장치 연결 성공";
+    }
+
+    // scan data 및 존별 최소 거리 초기화
+    deepracer::service::lidardata::skeleton::events::LEvent::SampleType scan_data;
+    scan_data.lidar_data = {9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f};
+
+    // 스캔 시작
+    drv->setMotorSpeed();
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    
+    drv->startScan(0,1);
+    auto scan_result = drv->startScan(0, 1);
+    if (!SL_IS_OK(scan_result)) {
+        m_logger.LogError() << "LidarData::Failed to start scan, Error Code: " << scan_result;
+    }else{
+        m_logger.LogVerbose() << "LidarData::Scan started successfully, Code: " << scan_result;
+    }
+    
+
     while (1) {
         sl_lidar_response_measurement_node_hq_t nodes[8192];
         size_t count = sizeof(nodes) / sizeof(sl_lidar_response_measurement_node_hq_t);
 
         // 데이터 캡처
-        auto op_result = drv->grabScanDataHq(nodes, count);
-
+        op_result = drv->grabScanDataHq(nodes, count);
+        m_logger.LogError() << op_result;
+        if (!SL_IS_OK(op_result)){
+            m_logger.LogError() << "LidarData::grab 실패>>grab 재시도";
+            drv->startScan(0,1);
+        }
         if (SL_IS_OK(op_result)) {
             drv->ascendScanData(nodes, count);
 
@@ -142,21 +181,18 @@ void LidarData::produceScanning() {
 
                 // 거리 센싱
                 float dist = nodes[pos].dist_mm_q2 / 4.0f;
+                //m_logger.LogVerbose() << "존: " << zone << ", 현재 거리: " << dist;
                 if (dist == 0) continue; // 거리가 0인 데이터는 무시
-                
                 // 해당 존에 최소 거리 업데이트
-                if (dist < scan_data[zone].distance) {
-                    scan_data[zone].distance = dist;
+                if (dist < scan_data.lidar_data[zone]) {
+                    scan_data.lidar_data[zone] = dist;
+                    //m_logger.LogVerbose() << "LidarData::존 " << zone << "의 최소 거리 업데이트: " << scan_data.lidar_data[zone];
                 }
             } 
         }
-        // m_LEeventData에 업데이트
+        // m_LEventData에 업데이트
         scan_data.timestamp = getCurrentTimestamp();
-        WriteDataLEevent(scan_data);
-        // SL_IS_OK가 아니라면 에러로그
-        else {
-            m_logger.LogError() << "Failed to grab scan data from Lidar.";
-        }
+        WriteDataLEvent(scan_data);
     }
 }
 
@@ -173,6 +209,7 @@ void LidarData::WriteDataLEvent(const deepracer::service::lidardata::skeleton::e
 
 void LidarData::SendEventLEventCyclic()
 {
+    std::this_thread::sleep_for(std::chrono::milliseconds(15000));
     while (m_running)
     {
         {
@@ -180,11 +217,23 @@ void LidarData::SendEventLEventCyclic()
             auto send = m_interface->LEvent.Send(m_LEventData);
             if (send.HasValue())
             {
-                m_logger.LogVerbose() << "LidarData::SendEventLEventCyclic::Send";
+                m_logger.LogVerbose() << "Cyclic::Send"
+                //<<m_LEventData.lidar_data[1];
+                <<m_LEventData.lidar_data.size()
+                <<m_LEventData.lidar_data[0]
+                <<m_LEventData.lidar_data[1]
+                <<m_LEventData.lidar_data[2]
+                <<m_LEventData.lidar_data[3]
+                <<m_LEventData.lidar_data[4]
+                <<m_LEventData.lidar_data[5]
+                <<m_LEventData.lidar_data[6]
+                <<m_LEventData.lidar_data[7]
+                <<m_LEventData.timestamp;
             }
             else
             {
-                m_logger.LogError() << "LidarData::SendEventLEventCyclic::Send::" << send.Error().Message();
+                m_logger.LogError() << "Cyclic::Send::Value()없음";
+                //<< send.Error().Message();
             }
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));

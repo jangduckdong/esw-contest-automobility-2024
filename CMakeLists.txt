@@ -25,3 +25,10 @@ add_subdirectory(SM)
 add_subdirectory(SensorFusion)
 add_subdirectory(Servo)
 add_subdirectory(Simulator)
+
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+target_link_libraries(Camera PRIVATE ${OpenCV_LIBS})
+
+target_include_directories(Lidar PRIVATE /home/deepracer/rplidar_sdk/sdk/include/)
+target_link_libraries(Lidar PRIVATE /home/deepracer/rplidar_sdk/output/Linux/Release/libsl_lidar_sdk.a)
