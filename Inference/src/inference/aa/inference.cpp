@@ -68,16 +68,16 @@ namespace {
         /// Store message in class so that the what method can dump it when invoked.
         const std::string msg_;
     };
-     /// Helper method that loads the multi head model into the desired plugin.
-     /// @returns Inference request object that will be used to perform inference
-     /// @param artifactPath Path to the artifact (xml) file
-     /// @param device String value of the device being used (CPU/GPU)
-     /// @param core Reference to a InferenceEngine core object.
-     /// @param inputName Reference to the vector of input layer names
-     /// @param outputName Reference to the output layers name, the method will populate this string
-     /// @param inputPrec The precision to use for the input layer
-     /// @param outputPrec The precision to use for the output layer
-     InferenceEngine::InferRequest setMultiHeadModel(std::string artifactPath, const std::string &device,
+        /// Helper method that loads the multi head model into the desired plugin.
+        /// @returns Inference request object that will be used to perform inference
+        /// @param artifactPath Path to the artifact (xml) file
+        /// @param device String value of the device being used (CPU/GPU)
+        /// @param core Reference to a InferenceEngine core object.
+        /// @param inputName Reference to the vector of input layer names
+        /// @param outputName Reference to the output layers name, the method will populate this string
+        /// @param inputPrec The precision to use for the input layer
+        /// @param outputPrec The precision to use for the output layer
+        InferenceEngine::InferRequest setMultiHeadModel(std::string artifactPath, const std::string &device,
                                             InferenceEngine::Core core, std::vector<std::string> &inputNamesArr,
                                             std::string &outputName, const InferenceEngine::Precision &inputPrec,
                                             const InferenceEngine::Precision &outputPrec,) {
@@ -95,10 +95,10 @@ namespace {
         // Loop through the inputNamesArr and set the precision
         for (const auto& pair : network.getInputsInfo()) {
             if(pair.first.rfind(OBS) != std::string::npos
-               || pair.first.rfind(LIDAR) != std::string::npos
-               || pair.first.rfind(FRONT) != std::string::npos
-               || pair.first.rfind(STEREO) != std::string::npos
-               || pair.first.rfind(LEFT) != std::string::npos) {
+                || pair.first.rfind(LIDAR) != std::string::npos
+                || pair.first.rfind(FRONT) != std::string::npos
+                || pair.first.rfind(STEREO) != std::string::npos
+                || pair.first.rfind(LEFT) != std::string::npos) {
                 inputNamesArr.push_back(pair.first);
                 pair.second->setPrecision(inputPrec);
             }
@@ -394,11 +394,11 @@ void Inference::Run()
     
     // 모델 불러오기 ( 수정 필요 )
     // inference_node.cpp 132번째 줄 확인
-    m_Inference = std::make_shared<inference::aa::IntelInferenceEngine::RLInferenceModel>();
-    
+    m_Inference = std::make_shared<inference::aa::Inference::RLInferenceModel>();
 
     // 매 주기마다 IEvent 데이터를 전송
     m_workers.Async([this] { m_InferenceData->SendEventIEventCyclic(); });
+    m_workers.Async([this] { TaskReceiveFEventCyclic(); });
     /*
     inference에서 처리해야 할 일
     1. Fusion에서 데이터 수신 : TaskRequestFMethod()
@@ -415,8 +415,18 @@ void Inference::Run()
 
     m_workers.Async([this] { m_InferenceData->SendEventIEventCyclic(); });
 
-    
     m_workers.Wait();
+}
+
+
+// FusionData Event의 Cyclic 수신처리에 대한 수행
+void Inference::TaskReceiveFEventCyclic()
+{
+    m_FusionData->SetReceiveEventFEventHandler([this](const auto& FEvent)
+    {
+        OnReceiveFEvent(FEvent);
+    });
+    m_FusionData->ReceiveEventFEventCyclic();
 }
 
 
@@ -438,17 +448,20 @@ void Inference::TaskRequestFMethod()
 }
 
 
-// Fusion FMethod에 대한 Response를 받았을시의 처리 함수
-void Inference::OnReceiveFMethod(const deepracer::service::fusiondata::proxy::methods::FMethod::Output& output)
+// Fusion FEvent에 대한 Response를 받았을시의 처리 함수
+void Inference::OnReceiveFEvent(const deepracer::service::fusiondata::proxy::events::FEvent::FEvent::SampleType& FEvent)
 {
     // 추론 시작 ( 수정 필요 )
-    m_Inference->startInference();
+    m_Inference->startInference(); 이거 어떻게 처리하지 ...
 
-    m_logger.LogInfo() << "Inference::OnReceiveFMethod:" << output.fusion_data;
+    Inference class 안에다가 RLInferenceModel을 넣어야댐 .. 
 
 
+    m_logger.LogInfo() << "Inference::OnReceiveFMethod:" << FEvent;
+
+    
     // 데이터 전처리
-    m_Inference->sensorCB(output);
+    m_Inference->sensorCB(FEvent);
 
     // 모델 추론 ( 수정 필요 )
     // loadModel(모델 경로, 처리된 이미지)
