@@ -54,9 +54,11 @@ private:
 
     void TaskReceiveLEventCyclic();
 
-    void OnReceiveCEvent();
+    //void OnReceiveCEvent();
+    //void OnReceiveLEvent();
+    void OnReceiveCEvent(const deepracer::type::CameraDataNode& sample);
+    void OnReceiveLEvent(const deepracer::type::LidarDataNode& sample);
 
-    void OnReceiveLEvent();
  
 private:
     bool m_running;

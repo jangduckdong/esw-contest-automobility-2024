@@ -96,6 +96,13 @@ void LidarData::Terminate()
     // stop port
     m_running = false;
     
+    // 드라이버 중지 및 정리
+    drv->stop();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    drv->setMotorSpeed(0);
+    drv.reset();
+    drv = NULL;
+    
     // stop offer service
     m_interface->StopOfferService();
     m_logger.LogVerbose() << "LidarData::Terminate::StopOfferService";
@@ -124,8 +131,6 @@ void LidarData::produceScanning() {
     }
 
     // scan data 및 존별 최소 거리 초기화
-    deepracer::service::lidardata::skeleton::events::LEvent::SampleType scan_data;
-    scan_data.lidar_data = {9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f};
 
     // 스캔 시작
     drv->setMotorSpeed();
@@ -143,6 +148,8 @@ void LidarData::produceScanning() {
     while (1) {
         sl_lidar_response_measurement_node_hq_t nodes[8192];
         size_t count = sizeof(nodes) / sizeof(sl_lidar_response_measurement_node_hq_t);
+        deepracer::service::lidardata::skeleton::events::LEvent::SampleType scan_data;
+        scan_data.lidar_data = {9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f, 9999.0f};
 
         // 데이터 캡처
         op_result = drv->grabScanDataHq(nodes, count);
@@ -209,7 +216,7 @@ void LidarData::WriteDataLEvent(const deepracer::service::lidardata::skeleton::e
 
 void LidarData::SendEventLEventCyclic()
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(15000));
+    //std::this_thread::sleep_for(std::chrono::milliseconds(15000));
     while (m_running)
     {
         {

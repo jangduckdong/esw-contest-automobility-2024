@@ -18,6 +18,8 @@
 /// INCLUSION HEADER FILES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "deepracer/service/fusiondata/svfusiondata_skeleton.h"
+#include "deepracer/service/cameradata/svcameradata_proxy.h"
+#include "deepracer/service/lidardata/svlidardata_proxy.h"
  
 #include "ara/log/logger.h"
  
@@ -40,7 +42,7 @@ public:
     SvFusionDataSkeletonImpl(ara::core::InstanceSpecifier instanceSpec, ara::com::MethodCallProcessingMode mode = ara::com::MethodCallProcessingMode::kEvent);
     
     /// @brief Request with Response method, FMethod
-    ara::core::Future<SvFusionDataSkeleton::FMethodOutput> FMethod() override;
+    //ara::core::Future<SvFusionDataSkeleton::FMethodOutput> FMethod() override;
     
     
 private:
@@ -76,6 +78,12 @@ public:
     
     /// @brief Terminate port
     void Terminate();
+
+    void WriteDataFEventCamera(const deepracer::type::CameraDataNode& data);
+
+    void WriteDataFEventLidar(const deepracer::type::LidarDataNode& data);
+
+    void SendEventFEventCyclic();
     
 private:
     /// @brief Logger for this port
@@ -91,6 +99,9 @@ private:
     std::shared_ptr<deepracer::service::fusiondata::skeleton::SvFusionDataSkeletonImpl> m_interface;
     
     deepracer::service::fusiondata::skeleton::events::FEvent::SampleType m_FEventData;
+
+    deepracer::service::cameradata::proxy::events::CEvent::SampleType m_CameraData;
+    deepracer::service::lidardata::proxy::events::LEvent::SampleType m_LidarData;
 
 };
  

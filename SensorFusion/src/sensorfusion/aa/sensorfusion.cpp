@@ -106,20 +106,20 @@ void SensorFusion::TaskReceiveLEventCyclic()
 void SensorFusion::OnReceiveCEvent(const deepracer::type::CameraDataNode& sample)
 {
     m_logger.LogInfo() << "SensorFusion::OnReceiveCEvent:timestemp" << sample.timestamp;
-    deepracer::service::cameradata::proxy::events::CEvent::SampleType camera_sample;
-    camera_sample.camera_data0 = sample.camera_data0;
-    camera_sample.camera_data1 = sample.camera_data1;
-    m_FusionData->WriteDataFEventCamera(camera_sample);
+    // deepracer::service::fusiondata::skeleton::events::FEvent::SampleType camera_sample;
+    // camera_sample.camera_data[0] = sample.camera_data0;
+    // camera_sample.camera_data[1] = sample.camera_data1;
+    m_FusionData->WriteDataFEventCamera(sample);
 }
 //const deepracer::service::lidardata::proxy::events::LEvent::SampleType& sample
 void SensorFusion::OnReceiveLEvent(const deepracer::type::LidarDataNode& sample)
 {
     m_logger.LogInfo() << "SensorFusion::OnReceiveLEvent:timestemp" << sample.timestamp;
 
-    deepracer::service::fusiondata::skeleton::events::FEvent::SampleType lidar_sample;
-    lidar_sample.lidar_data = sample.lidar_data;
-    lidar_sample.timestamp = sample.timestamp;
-    m_FusionData->WriteDataFEventLidar(lidar_sample);
+    // deepracer::service::fusiondata::skeleton::events::FEvent::SampleType lidar_sample;
+    // lidar_sample.lidar_data = sample.lidar_data;
+    // lidar_sample.timestamp = sample.timestamp;
+    m_FusionData->WriteDataFEventLidar(sample);
 }
  
 } /// namespace aa

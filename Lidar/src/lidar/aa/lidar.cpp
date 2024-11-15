@@ -51,29 +51,29 @@ bool Lidar::Initialize()
     m_logger.LogVerbose() << "Lidar::Initialize";
     m_LidarData = std::make_shared<lidar::aa::port::LidarData>();
     
-    const char* dev = "/dev/ttyUSB0";
-    uint32_t baudrate = 115200;
-    // 드라이버 인스턴스 생성
-    ILidarDriver * drv = *createLidarDriver();
-    if (!drv) {
-        m_logger.LogError() << "Insufficient memory for Lidar driver";
-        return false;
-    }else{
-        m_logger.LogError() << "Lidar 인스턴스 생성 성공";
-    }
-    // 장치 연결
-    IChannel* channel = *createSerialPortChannel(dev, baudrate);
-    auto res = drv->connect(channel);
-    if (!SL_IS_OK(res)) {
-        m_logger.LogError() << "Failed to connect to Lidar device";
-        return false;
-    }else{
-        m_logger.LogError() << "Lidar 장치 연결 성공";
-    }
+    // const char* dev = "/dev/ttyUSB0";
+    // uint32_t baudrate = 115200;
+    // // 드라이버 인스턴스 생성
+    // ILidarDriver * drv = *createLidarDriver();
+    // if (!drv) {
+    //     m_logger.LogError() << "Lidar::인스턴스 생성 실패";
+    //     return false;
+    // }else{
+    //     m_logger.LogError() << "Lidar 인스턴스 생성 성공";
+    // }
+    // // 장치 연결
+    // IChannel* channel = *createSerialPortChannel(dev, baudrate);
+    // auto res = drv->connect(channel);
+    // if (!SL_IS_OK(res)) {
+    //     m_logger.LogError() << "Lidar::Failed to connect to device";
+    //     return false;
+    // }else{
+    //     m_logger.LogError() << "Lidar::장치 연결 성공";
+    // }
     // 드라이버 중지 및 정리
-    drv->stop();
-    drv = NULL;
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    // drv->stop();
+    // drv = NULL;
+    // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 
     return true;  // 초기화 성공 시 true 반환
 }
@@ -94,12 +94,12 @@ void Lidar::Terminate()
     
     m_LidarData->Terminate();
 
-    // 드라이버 중지 및 정리
-    drv->stop();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    drv->setMotorSpeed(0);
-    drv.reset();
-    drv = NULL;
+    // // 드라이버 중지 및 정리
+    // drv->stop();
+    // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // drv->setMotorSpeed(0);
+    // drv.reset();
+    // drv = NULL;
 }
  
 void Lidar::Run()
