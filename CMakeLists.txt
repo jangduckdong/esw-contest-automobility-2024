@@ -24,7 +24,6 @@ add_subdirectory(Navigate)
 add_subdirectory(SM)
 add_subdirectory(SensorFusion)
 add_subdirectory(Servo)
-add_subdirectory(Simulator)
 
 # find_package(OpenCV REQUIRED)
 # include_directories(${OpenCV_INCLUDE_DIRS})
