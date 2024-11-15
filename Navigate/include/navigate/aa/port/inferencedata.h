@@ -70,6 +70,9 @@ private:
     
     /// @brief Callback for event receiver, IEvent
     void RegistReceiverIEvent();
+
+    void SetReceiveEventIEventHandler(
+        std::function<void(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType&)> handler);
     
     
 private:
@@ -90,6 +93,8 @@ private:
     
     /// @brief Find service handle
     std::shared_ptr<ara::com::FindServiceHandle> m_findHandle;
+
+    std::function<void(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType&)> m_receiveEventIEventHandler;
 };
  
 } /// namespace port

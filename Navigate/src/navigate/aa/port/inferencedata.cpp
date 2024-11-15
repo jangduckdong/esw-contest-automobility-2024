@@ -15,6 +15,8 @@
 #include <string>
 #include "navigate/aa/port/inferencedata.h"
  
+#include "deepracer/service/inferencedata/svinferencedata_proxy.h"
+
 namespace navigate
 {
 namespace aa

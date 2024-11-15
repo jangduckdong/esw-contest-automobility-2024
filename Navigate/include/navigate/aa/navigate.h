@@ -54,10 +54,10 @@ public:
 private:
     /// @brief Run software component
     void Run();
-    void SetActionSpace()
+    void SetActionSpace();
     void TaskReceiveIEventCyclic();
     void InferenceCb(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg);
-    void ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::proxy::events::NEvent::SampleType& navigateMsg)
+    void ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::skeleton::events::NEvent::SampleType& navigateMsg);
     float GetMaxScaledValue(float actionValue, const std::string& actionKey);
     float GetNonLinearlyMappedSpeed(float scaledActionSpaceSpeed);
     float ScaleContinuousValue(float action, float minOld, float maxOld, float minNew, float maxNew);

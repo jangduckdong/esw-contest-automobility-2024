@@ -154,7 +154,7 @@ void Navigate::TaskReceiveIEventCyclic()
 void Navigate::InferenceCb(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg)
 {
     // navigateMsg 객체 생성
-    deepracer::service::navigatedata::proxy::events::NEvent::SampleType navigateMsg;
+    deepracer::service::navigatedata::skeleton::events::NEvent::SampleType navigateMsg;
 
     // inferenceMsg 데이터를 사용하여 필요한 값을 설정
     ProcessInferenceData(inferenceMsg, navigateMsg);
@@ -171,7 +171,7 @@ void Navigate::InferenceCb(const deepracer::service::inferencedata::proxy::event
                        << " Timestamp=" << navigateMsg.timestamp;
 }
 
-void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::proxy::events::NEvent::SampleType& navigateMsg)
+void Navigate::ProcessInferenceData(const deepracer::service::inferencedata::proxy::events::IEvent::SampleType& inferenceMsg, deepracer::service::navigatedata::skeleton::events::NEvent::SampleType& navigateMsg)
 {
     // 기본 스로틀 값 설정
     navigateMsg.throttle = m_throttleScale;  // m_throttleScale 변수는 클래스의 멤버 변수여야 함
