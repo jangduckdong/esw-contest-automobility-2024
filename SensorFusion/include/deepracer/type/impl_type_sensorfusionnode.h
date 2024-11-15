@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
+\///////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                                        
 /// Copyright, 2021 PopcornSAR Co., Ltd. All rights reserved.                                              
 /// This software is copyright protected and proprietary to PopcornSAR Co., Ltd.                           
@@ -33,11 +33,10 @@ namespace type
 {
 struct SensorFusionNode
 {
-    deepracer::type::CameraDataVector camera_data0;
-    deepracer::type::CameraDataVector camera_data1;
+    deepracer::type::CameraDataVector camera_data;
     deepracer::type::FloatVector lidar_data;
     std::int64_t timestamp;
-    PARA_STRUCTURE(SensorFusionNode, camera_data0, camera_data1, lidar_data, timestamp);
+    PARA_STRUCTURE(SensorFusionNode, camera_data, lidar_data, timestamp);
 };
 } /// namespace type
 } /// namespace deepracer
