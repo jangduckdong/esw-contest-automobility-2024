@@ -19,13 +19,12 @@ Para_Target(${PARA_APP_NAME}
 find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs)
 find_package(InferenceEngine REQUIRED)
 find_package(deepracer_interfaces_pkg REQUIRED)
-find_package(std_msgs REQUIRED)
 find_package(ngraph REQUIRED)
 # ============================================================================
 
 target_include_directories(${PARA_APP_NAME}
                             PRIVATE
-                            ${CMAKE_CURRENT_SOURCE_DIR}/include
+                            $/home/deepracer/minkyu/Inference/include
                             ${OpenCV_INCLUDE_DIRS}
                             ${InferenceEngine_INCLUDE_DIRS}
 )

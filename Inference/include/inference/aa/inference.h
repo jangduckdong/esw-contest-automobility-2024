@@ -22,27 +22,37 @@
 #include "inference_engine.hpp"
 #include "para/swc/port_pool.h"
 #include "inference/aa/image_process.hpp"
-
+#include <vector>
 
 namespace inference
 {
     namespace aa
     {
-
+        class InferenceBase
+        {
+        public:
+            InferenceBase() = default;
+            ~InferenceBase() = default;
+            virtual bool loadModel(const char *artifactPath,
+                                   std::shared_ptr<inference::aa::InferTask::Grey> imgProcess) = 0;
+            /// Starts the inference task until stopped.
+            // virtual void startInference() = 0;
+            /// Stops the inference task if running.
+        };
         // namespace Intel 머시기 내일 등록하기
         namespace IntelInferenceEngine
         {
-            class RLInferenceModel : public InferTask
+            class RLInferenceModel : public inference::aa::InferenceBase
             {
             public:
-                RLInferenceModel::RLInferenceModel() {}
+                RLInferenceModel() {}
 
-                virtual bool RLInferenceModel::loadModel(const char *artifactPath, std::shared_ptr<ImgProcessBase> imgProcess) {}
-                virtual void RLInferenceModel::startInference() {}
-                void RLInferenceModel::sensorCB(const deepracer::service::fusiondata::proxy::events::FEvent::FEvent::SampleType& output) {}
+                virtual bool loadModel(const char *artifactPath, std::shared_ptr<inference::aa::InferTask::Grey> imgProcess);
+                // virtual void startInference();
+                deepracer::type::InferenceDataNode sensorCB(const deepracer::service::fusiondata::proxy::events::FEvent::FEvent::SampleType &output);
 
             private:
-                std::shared_ptr<ImgProcessBase> imgProcess_;
+                std::shared_ptr<inference::aa::InferTask::ImgProcessBase> imgProcess_;
                 InferenceEngine::Core core_;
                 /// Inference request object
                 InferenceEngine::InferRequest inferRequest_;
@@ -50,7 +60,7 @@ namespace inference
                 std::vector<std::string> inputNamesArr_;
                 /// Name of the output layer
                 std::string outputName_;
-            }
+            };
 
         }
 

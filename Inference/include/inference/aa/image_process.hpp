@@ -28,6 +28,7 @@ namespace aa
 {
 
 namespace InferTask {
+
     class ImgProcessBase
     {
     public:
@@ -89,8 +90,9 @@ namespace InferTask {
 
     };
 }
+
+}
+
+}
+
 #endif
-
-}
-
-}
