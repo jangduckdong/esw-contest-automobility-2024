@@ -16,26 +16,21 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "inference/aa/inference.h"
-// #include "inference/aa/intel_inference_eng.hpp"
 #include "inference/aa/image_process.hpp"
-
 #include <exception>
 #define RAD2DEG(x) ((x) * 180. / M_PI)
-
-// opencv header. => 추후 딥레이서에 설치되어있는지 확인해봐야할듯 ? => 설치했다고 답변받음
 #include <opencv2/opencv.hpp>
 #include <vector>
-
+#include <mutex>
 // 추가한 코드 (1줄)
 #include "deepracer/type/impl_type_inferencedatanode.h"
-
+std::mutex inference_mutex;
 using namespace cv;
 const std::string LIDAR = "LIDAR";
 const std::string STEREO = "STEREO_CAMERAS";
 const std::string FRONT = "FRONT_FACING_CAMERA";
 const std::string OBS = "observation";
 const std::string LEFT = "LEFT_CAMERA";
-std::int32_t lock = 0;
 
 namespace inference
 {
@@ -289,7 +284,6 @@ namespace inference
                     auto outputDims = output->getTensorDesc().getDims();
                     auto outputData = output->buffer().as<InferenceEngine::PrecisionTrait<InferenceEngine::Precision::FP32>::value_type *>();
 
-
                     deepracer::type::InferenceDataNode inferMsg;
 
                     inferMsg.timestamp = fusiondata.timestamp;
@@ -314,7 +308,6 @@ namespace inference
 
                     // 추가한 코드: 데이터 전송 (1줄)
 
-                    lock = 0;
                     return inferMsg;
                     /*
 
@@ -417,12 +410,9 @@ namespace inference
         void Inference::TaskReceiveFEventCyclic()
         {
 
-            m_FusionData->SetReceiveEventFEventHandler([this](const auto &FEvent)
-                                                       {   if(!lock){
-        lock=1;
-        OnReceiveFEvent(FEvent);
-        
-        } });
+            m_FusionData->SetReceiveEventFEventHandler([this](const auto &FEvent){
+                                                        std::lock_guard<std::mutex> lock(inference_mutex));
+                                                        OnReceiveFEvent(FEvent); });
             m_FusionData->ReceiveEventFEventCyclic();
         }
 
