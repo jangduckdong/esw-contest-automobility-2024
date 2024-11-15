@@ -411,7 +411,7 @@ namespace inference
         {
 
             m_FusionData->SetReceiveEventFEventHandler([this](const auto &FEvent){
-                                                        std::lock_guard<std::mutex> lock(inference_mutex));
+                                                        std::lock_guard<std::mutex> lock(inference_mutex);
                                                         OnReceiveFEvent(FEvent); });
             m_FusionData->ReceiveEventFEventCyclic();
         }
