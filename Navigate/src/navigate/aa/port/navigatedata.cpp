@@ -108,7 +108,7 @@ void NavigateData::SendEventNEventCyclic()
                 m_logger.LogError() << "NavigateData::SendEventNEventCyclic::Send::" << send.Error().Message();
             }
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
  
