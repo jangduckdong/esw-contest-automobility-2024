@@ -136,7 +136,7 @@ void FusionData::SendEventFEventCyclic()
                 m_logger.LogError() << "FusionData::SendEventFEventCyclic::Send::실패" << send.Error().Message();
             }
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
  

@@ -209,7 +209,6 @@ void LidarData::WriteDataLEvent(const deepracer::service::lidardata::skeleton::e
 
 void LidarData::SendEventLEventCyclic()
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(15000));
     while (m_running)
     {
         {
@@ -236,7 +235,7 @@ void LidarData::SendEventLEventCyclic()
                 //<< send.Error().Message();
             }
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
  
