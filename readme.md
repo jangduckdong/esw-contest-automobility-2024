@@ -44,7 +44,7 @@
 - SOA를 채택해 각 AA 간의 효율적인 통신과 데이터 처리를 중심으로 구성함.
 
 - PoncornSAR의 ARXML 설계 솔루션인 AUTOSAR.io 를 활용해 SOA 개발 방식을 채택함으로써 시스템의 확장성과 유지보수성을 높일 수 있게 설계함.
-- 
+
 - 각 Adaptive Application의 통신은 SOME/IP 미들웨어 방식을 채택해 EVENT 방식으로 통신하게 설계함.
 
 
@@ -93,22 +93,21 @@
         
     - 주행 경로 및 장애물 회피 성능 테스트
         
-        - Inference 모듈을 통해 생성된 주행 경로와 장애물 회피 경로를 따라 차량이 정확히 주행할 수 있음을 확인함.
+        - 강화학습을 통해 생성된 주행 경로와 장애물 회피 경로를 따라 차량이 정확히 주행할 수 있음을 확인함.
         
-        - Navigate와 Servo AA가 연동되어 조향 및 속도 제어가 안정적으로 이루어졌으며, 장애물을 회피하면서도 경로를 유지할 수 있었음.
+        - Navigate와 Servo AA가 연동되어 조향 및 속도 정보를 주고받는 것을 확인함.
         
-        - 주행 경로 성능이 개선되어, 주행시간 약 15% 감소하여 전체 주행 안정성이 높아짐.
+        - Event 기반 서비스 인터페이스를 채택하여 응답 피드백 속도의 향상과 경로 추종을 구현한 결과 통신 성능이 약 15% 향상되었음.
         
         - 급격한 회전이나 장애물 인식 상황에서도 지연을 최소화된 상태로 조향과 속도 제어가 이루어졌고, 주행 중 발생할 수 있는 위험 요소(충돌 등)가 최소로 구현함.
+
+
+## 실차 주행 영상
+
   <p align="left">
     <img src = "etc/테스트.gif" " height="400">
   </p>
         
-
-## 실차 주행 영상
-
-- https://www.youtube.com/shorts/9_1Xo4drMzE
-  
 <a href="https://www.youtube.com/watch?v=9_1Xo4drMzE" target="_blank">
   <img src="https://img.youtube.com/vi/9_1Xo4drMzE/0.jpg" alt="YouTube Video Thumbnail" width="600">
 </a>
